@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: comp_av 1.12 2001/02/27 13:45:50 lefevre Exp lefevre $';
+my $RCSID = '$Id: comp_av 1.13 2001/02/27 14:13:30 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my @be = (undef, undef, 1, 2, 6, 14, 32, 73, 164, 353, 780, 1683, 3619,
@@ -35,7 +35,9 @@ _ Patterns in mode 'h'
 _ f(a+b) and f(ab) inequalities (qtree.c until 2^28 -- the last 3 values
   could be a little greater than the real values)
 
-m	Bstein	Patt.s	Patt.g	Patt.h	Ineq.
+% when compared to ineq.
+
+m	  Bernstein	  Patterns s	  Patterns g	  Patterns h	 Ineq
 EOF
 
 my $m = 2;
@@ -44,8 +46,9 @@ while ($be[$m] || $ps[$m] || $pg[$m] || $ph[$m] || $am[$m])
   {
     print $m;
     foreach (\@be, \@ps, \@pg, \@ph, \@am)
-      { print "\t";
-        $_->[$m] and printf "%.4f", $_->[$m]/$t; }
+      { printf "\t%.4f", $_->[$m]/$t;
+        printf " (%04.1f\%)", 100 * ($_->[$m]/$am[$m] - 1)
+          unless ($_ eq \@am); }
     print "\n";
     $m++;
     $t <<= 1;
