@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.9 2000/11/23 10:59:50 lefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.10 2000/11/28 08:45:03 vlefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -203,4 +203,59 @@ EOF
 
 sub gsas
   {
+    my @x = (&makeind($_[0]));
+    while (@x)
+      {
+        $level > 2
+          and print "\ngsas: ", join('+', map { $$_{'s'} } @x), "\n";
+        my %w;
+        foreach (0 .. $#x)
+          {
+            my %x1 = %{$x[$_]};
+            my $key = $_;
+            foreach ($_ .. $#x)
+              {
+                my %x2 = %{$x[$_]};
+                my $same = $_ == $key;
+                $key .= ",$_";
+                foreach (&getdist($x1{'p'}, $x2{'p'}, $same, '+'),
+                         &getdist($x1{'p'}, $x2{'n'}, $same, '-'),
+                         &getdist($x1{'n'}, $x2{'p'}, $same, '-'),
+                         &getdist($x1{'n'}, $x2{'n'}, $same, '+'))
+                  { $w{"$key,$_"}++ }
+              }
+          }
+        my @d = sort { $w{$a} <=> $w{$b} || $a <=> $b } keys %w;
+        if ($level > 3)
+          { my $i = $#d;
+            do
+              { my @a = $d[$i] =~ /^(\d+),(\d+),(\d+)([-+])$/ or die;
+                printf "%3d, %3d, %3d, %s, w = %d\n", @a, $w{$d[$i]}; }
+            while (--$i >= 0); }
+        my $d;
+        my $w = 0;
+        while ($w{$d = pop @d} > $w)
+          {
+            $i != $j and $w = $w{$d}, last;
+          }
+exit;
+      }
   }
+
+sub makeind
+  { my $s = $_[0];
+    $s =~ s/0*$//;
+    my $l = length($s) - 1;
+    my ($i,@n,@p);
+    for($i=0;$i<=$l;$i++)
+      { my $d = substr $s, $l-$i, 1;
+        $d eq 'P' and push @p, $i;
+        $d eq 'N' and push @n, $i; }
+    return { 's' => $s, 'p' => \@p, 'n' => \@n }; }
+
+sub getdist
+  { my ($x1,$x2,$same,$sign) = @_;
+    my ($i,$j,@r);
+    foreach $i (@$x1) { foreach $j (@$x2)
+      { push @r, ($i-$j).$sign unless ($same && $i <= $j) } }
+    return @r; }
