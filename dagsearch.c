@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.4 2001/04/30 08:53:40 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.5 2001/05/02 02:49:32 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -94,6 +94,7 @@ void dagsearch(int q, int *dag, long mmax)
     }
     if (v[i] == 0)
       goto next;
+    if (i < q)
     {
       int j;
       for (j = 0; j < i; j++)
