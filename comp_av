@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: comp_av 1.2 2001/01/22 14:10:49 lefevre Exp lefevre $';
+my $RCSID = '$Id: comp_av 1.3 2001/01/25 16:05:22 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my @be = (undef, undef, 1, 2, 6, 14, 32, 73, 164, 353, 780, 1683, 3619,
@@ -18,7 +18,8 @@ my @pg = (undef, undef, 1, 2, 6, 14, 32, 74, 165, 363, 785, 1695, 3617,
           2871387, 5954906, 12334713);
 
 my @am = (undef, undef, 1, 2, 6, 14, 32, 73, 163, 349, 739, 1585, 3423,
-          7278, 15253, 31753, 66700, 139889, 292379, 606048, 1249031);
+          7278, 15253, 31753, 66700, 139889, 292379, 606048, 1249031,
+          2570925, 5317732, 11015206);
 
 print <<EOF;
 Comparison between different algorithms. All the constants are considered.
@@ -26,7 +27,7 @@ Comparison between different algorithms. All the constants are considered.
 _ Bernstein's algorithm (bernstein.c)
 _ Patterns in mode 's'
 _ Patterns in mode 'g'
-_ f(a+b) and f(ab) inequalities (qtree.c until 2^24)
+_ f(a+b) and f(ab) inequalities (qtree.c until 2^27)
 
 m	Bstein	Patt.s	Patt.g	Ineq.
 EOF
