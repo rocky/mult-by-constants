@@ -1,5 +1,5 @@
 /*
- * $Id: gendags.c 1.2 2001/04/18 14:36:05 lefevre Exp lefevre $
+ * $Id: gendags.c 1.3 2002/12/12 09:24:05 lefevre Exp lefevre $
  *
  * In order to find the possible results (in an interval) that can be
  * obtained with q shift-and-add operations, this program generates a
@@ -29,9 +29,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <limits.h>
+#include <errno.h>
 
 #define odd(i) ((i) & 1)
 #define even(i) (!odd(i))
+
+int readint(char *value, char *var, int min, int max)
+{
+  long tmp;
+  char *end;
+
+  tmp = strtol(value, &end, 10);
+  if (*end != '\0' || errno == ERANGE || tmp < min || tmp > max)
+    {
+      fprintf(stderr, "gendags: bad input value %s (must be in [%d,%d])\n",
+              var, min, max);
+      exit(2);
+    }
+  return (int) tmp;
+}
 
 int main(int argc, char **argv)
 {
@@ -45,24 +62,8 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-  level = atoi(argv[1]);
-  if (level < 0)
-    {
-      fprintf(stderr, "gendags: level must not be negative\n");
-      exit(2);
-    }
-
-  q = atoi(argv[2]);
-  if (q < 1)
-    {
-      fprintf(stderr, "gendags: q must be at least 1\n");
-      exit(3);
-    }
-  if (q > 32)
-    {
-      fprintf(stderr, "gendags: q must be at most 32\n");
-      exit(4);
-    }
+  level = readint(argv[1], "level", 0, INT_MAX);
+  q = readint(argv[2], "q", 1, 31);
   if (q == 1)
     {
       printf("(0,0)\n");
@@ -110,9 +111,9 @@ int main(int argc, char **argv)
 
         inc_ok:
           assert(even(i));
-          u = (1 << x) | (1 << y);
+          u = (1UL << x) | (1UL << y);
           for (j = 0; j < i; j++)
-            u |= 1 << dag[j];
+            u |= 1UL << dag[j];
           while (i < 2*q)
             {
               dag[i] = x;
@@ -144,7 +145,8 @@ int main(int argc, char **argv)
                 while (j < q)
                   {
                     unsigned long v;
-                    v = (((1 << dag[2*j]) | (1 << dag[2*j+1])) >> (i+1)) & 3;
+                    v = ( ((1UL << dag[2*j]) | (1UL << dag[2*j+1]))
+                          >> (i+1) ) & 3;
                     if (v == 1)  /* 1st pair referenced, not the 2nd -> OK */
                       break;
                     if (v == 2)  /* 2nd pair referenced, not the 1st -> rej */
