@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.14 2001/02/26 13:25:15 lefevre Exp lefevre $
+ * $Id: qtree.c 1.15 2001/02/27 11:00:59 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -15,10 +15,11 @@
  *   -DRESULTS   write information to stdout each time a value is found
  *   -DLOWMEM    low memory (--> PARENTS is undefined)
  *
- * Usage: qtree <cmax> <m> [<dest_file>]
+ * Usage: qtree <cmax> <m> [[-]<dest_file>]
  *   cmax: maximal cost (-1 if no maximal cost)
  *   m: value of m (decimal number)
  *   dest_file: if present, file where the values of f_m are stored
+ *   -dest_file: the file is saved at each iteration
  */
 
 #include <stdio.h>
@@ -155,8 +156,33 @@ typedef struct cell CELL;
 
 #endif
 
+#define WRITEFILE do { \
+    for (i = 0; i <= m; i++) \
+    { \
+      if (COST(i) > 126) \
+      { \
+        fprintf(stderr, "qtree: cost too high!\n"); \
+        exit(33); \
+      } \
+      if (putc(COST(i), f) < 0) \
+      { \
+        fprintf(stderr, "qtree: cannot write to file!\n"); \
+        exit(34); \
+      } \
+    } \
+    if (fclose(f)) \
+    { \
+      fprintf(stderr, "qtree: cannot close file!\n"); \
+      exit(35); \
+    } \
+  } while (0)
+
 int main(int argc, char **argv)
 {
+  int flag = -1;   /* -1: results not saved;
+                       0: results saved at each iteration;
+                       1: results saved at the end */
+  char *file = NULL;
   long h, i, m, r;
   int c, cmax;
   CELL *t;
@@ -168,7 +194,7 @@ int main(int argc, char **argv)
 
   if (argc != 3 && argc != 4)
   {
-    fprintf(stderr, "Usage: qtree <cmax> <m> [<dest_file>]\n");
+    usage: fprintf(stderr, "Usage: qtree <cmax> <m> [[-]<dest_file>]\n");
     exit(1);
   }
 
@@ -197,6 +223,18 @@ int main(int argc, char **argv)
     fprintf(stderr, "qtree: out of memory!\n");
     exit(4);
   }
+
+  if (argc == 4)
+  {
+    file = argv[3];
+    flag = file[0] != '-';
+    if (!flag && *(++file) == '\0')
+      goto usage;
+    printf(flag ? "Results saved at the end\n"
+                : "Results saved at each iteration\n");
+  }
+  else
+    file = NULL;  /* to avoid the warning with gcc 2.95.2 */
 
   for (i = 2; i <= m; i++)
     COST(i) = -1;  /* not valid yet */
@@ -356,36 +394,36 @@ int main(int argc, char **argv)
 
     printf("Nmin(%d) = %ld\n", c, nmin);
     fflush(stdout);
+
+    if (flag == 0)  /* temporary results */
+    {
+      FILE *f;
+
+      f = fopen(file, "r+b");
+      if (f == NULL)
+      {
+        f = fopen(file, "wb");
+        if (f == NULL)
+        {
+          fprintf(stderr, "qtree: cannot open file (update or create)!\n");
+          exit(32);
+        }
+      }
+      WRITEFILE;
+    }
   }
 
-  if (argc == 4)
+  if (flag == 1)  /* final results */
   {
     FILE *f;
 
-    f = fopen(argv[3], "wb");
+    f = fopen(file, "wb");
     if (f == NULL)
     {
       fprintf(stderr, "qtree: cannot create file!\n");
-      exit(6);
+      exit(32);
     }
-    for (i = 0; i <= m; i++)
-    {
-      if (COST(i) > 126)
-      {
-        fprintf(stderr, "qtree: cost too high!\n");
-        exit(7);
-      }
-      if (putc(COST(i), f) < 0)
-      {
-        fprintf(stderr, "qtree: cannot write to file!\n");
-        exit(8);
-      }
-    }
-    if (fclose(f))
-    {
-      fprintf(stderr, "qtree: cannot close file!\n");
-      exit(9);
-    }
+    WRITEFILE;
   }
 
   return 0;
