@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.12 2000/11/29 14:17:45 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.13 2000/11/29 15:30:54 lefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -231,7 +231,7 @@ sub gsas
                        $same && $i1 <= $i2 and next;
                        my $b2 = substr($s2, -($i2+1), 1);
                        my $key = $key2.($i1-$i2).$sign{$b1.$b2};
-                       push @{$v{$key}}, $i2;
+                       push @{$v{$key}}, $i2;  # --> already sorted
                        $w{$key}++;
                      }
                   }
@@ -246,15 +246,28 @@ sub gsas
                 my @a = $key =~ /^(\d+),(\d+),(\d+)([-+])$/ or die;
                 printf "%3d, %3d, %3d, %s, w = $w{$key} (@{$v{$key}})\n", @a;
               }
-            while (--$i >= 0); }
-        my ($c,$d);
+            while (--$i >= 0);
+            print "Tries:\n"; }
+        my ($c,$k);
         my $w = 0;
-        while ($w{$d = pop @d} > $w)
-          {
-            my ($i1,$i2) = $d =~ /^(\d+),(\d+),/ or die;
-            $i1 != $i2 and ($c,$w) = ($d,$w{$d}), last;
-
-          }
+        while ($w{$k = pop @d} > $w)
+          { my ($i1,$i2,$d) = $k =~ /^(\d+),(\d+),(\d+)/ or die;
+            $i1 != $i2 and ($c,$w) = ($k,$w{$k}), last;
+            my $v = $v{$k};
+            my $j = 0;
+            my %h;
+            while ($j <= $#$v)
+              {
+                my $i = $v->[$j];
+                if ($h{$i} || $h{$i+$d})
+                  { splice @$v, $j, 1; }
+                else
+                  { $h{$i} = 1; $h{$i+$d} = 1; $j++; }
+              }
+            my $x = @$v;
+            $level > 3
+              and printf "%3d, %3d, %3d  -> w = $x (@$v)\n", $i1, $i2, $d;
+            $x > $w and $w = $x, $c = $k; }
 exit;
       }
   }
