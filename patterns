@@ -1,8 +1,8 @@
-#!/usr/local/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.23 2001/02/06 14:10:20 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.24 2003/06/11 15:59:03 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
