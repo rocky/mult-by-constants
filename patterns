@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.17 2000/11/30 10:45:02 vlefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.18 2000/12/05 02:05:55 vlefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -29,6 +29,7 @@ Mode r:
 
 Mode w:
   Arg1... number of digits (> 1).
+  Arg2... number of output worst cases (optional, default 32).
   Out.... worst cases.
 
 Algo s: simple algorithm (as described in the thesis)
@@ -117,6 +118,7 @@ elsif ($mode eq 'w')
     my ($i,$n,@w);
 
     ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
+    my $wmax = $ARGV[1] || 32;
     my $qmax = 0;
     for ($i = (1<<($n-1))+1; $i < 1<<$n; $i += 2)
       {
@@ -124,7 +126,7 @@ elsif ($mode eq 'w')
         my $a = unpack 'B*', pack 'N', $i;
         $a =~ s/^0*//;
         my $q = &$subsas(&booth($a));
-        $q == $qmax && @w < 32 and push @w, $a;
+        $q == $qmax && @w < $wmax and push @w, $a;
         $q > $qmax or next;
         $qmax = $q;
         @w = ($a);
