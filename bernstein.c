@@ -32,7 +32,11 @@ typedef unsigned long int VALUE;
 #endif
 
 #ifndef HASH_SIZE
-#define HASH_SIZE 511
+#define HASH_SIZE 16383
+#endif
+
+#ifndef MAXNON
+#define MAXNON 65536
 #endif
 
 #ifdef PRUNE
@@ -45,7 +49,8 @@ typedef unsigned long int VALUE;
 #define odd(n) ((n) & 1)
 #define even(n) (!odd(n))
 
-enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST };
+enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST,
+       EXIT_INTERROR };
 
 typedef enum { INVALID, NOOP, ADD1, SUB1, FADD, FSUB } OP;
 static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
@@ -61,6 +66,7 @@ typedef struct node {
 
 
 static NODE *hash_table[HASH_SIZE];
+static long int non = 0;  /* number of nodes */
 static int mode;
 
 void init_hash(void);
@@ -116,7 +122,26 @@ void init_hash(void)
 {
   unsigned int i;
   for (i = 0; i < HASH_SIZE; i++)
+  {
+    NODE *node;
+    node = hash_table[i];
+    while (node)
+    {
+      NODE *parent;
+      parent = node->parent;
+      if (non-- == 0)
+      {
+        fprintf(stderr, "bernstein: internal error ('non' too low)!\n");
+        exit(EXIT_INTERROR);
+      }
+      free(node);
+      node = parent;
+    }
     hash_table[i] = NULL;
+  }
+  if (non == 0) return;
+  fprintf(stderr, "bernstein: internal error ('non' too high)!\n");
+  exit(EXIT_INTERROR);
 }
 
 
@@ -160,9 +185,10 @@ NODE *get_node(VALUE n)
   node = malloc(sizeof *node);
   if (!node)
   {
-    fprintf(stderr, "bernstein: out of memory!\n");
+    fprintf(stderr, "bernstein: out of memory (%ld nodes)!\n", non);
     exit(EXIT_MEMORY);
   }
+  non++;
   node->parent = NULL;
   node->value = n;
   node->next = hash_table[hash];
@@ -243,6 +269,12 @@ void bernstein(VALUE n)
 #ifdef PRUNE
   VALUE p;
   unsigned int limit = 0;
+#endif
+
+  if (non > MAXNON)
+    init_hash();
+
+#ifdef PRUNE
   p = n >> 1;
   while (p)  /* count the number of 1's in p */
   {
@@ -286,4 +318,4 @@ unsigned int emit_code(NODE *node)
 }
 
 
-/* $Id: bernstein.c 1.4 2000/11/22 01:49:29 vlefevre Exp lefevre $ */
+/* $Id: bernstein.c 1.5 2000/11/22 17:23:31 lefevre Exp lefevre $ */
