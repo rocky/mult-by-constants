@@ -2,11 +2,11 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.7 2000/11/22 02:15:17 vlefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.9 2000/11/23 10:59:50 lefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
-$proc <mode> <args...>
+$proc <mode> <algo> <args...>
 
 Mode a:
   Arg1... odd binary number.
@@ -24,22 +24,34 @@ Mode m:
 Mode w:
   Arg1... number of digits (> 1).
   Out.... worst cases.
+
+Algo s: simple algorithm (as described in the thesis)
+Algo g: global algorithm (common subpatterns)
 EOF
 
 @ARGV > 1 or die $Usage;
 my $mode = shift;
+my $algo = shift;
 my @sign = ('+','-');
 my $level = 0;
 my @sas;
 
+my $subsas;
+if ($algo eq 's')
+  { $subsas = \&recsas; }
+elsif ($algo eq 'g')
+  { $subsas = \&gsas; }
+else
+  { die $Usage; }
+
 if ($mode eq 'a')
   {
     my ($a,$b);
-    ($a = shift) =~ /^[01]*1[01]*$/ or die $Usage;
+    ($a = shift) =~ /^[01]*1$/ or die $Usage;
     $level = shift;
     $b = &booth($a);
     $level > 1 and print "Booth recoding: $b.\n";
-    &recsas($b);
+    &$subsas($b);
     $level > 1 and print "\n";
     print "Cost($a) = ", scalar(@sas), "\n";
     $level and print @sas;
@@ -63,7 +75,7 @@ elsif ($mode eq 'm' || $mode eq 'b')
         @sas = ();
         my $a = unpack 'B*', pack 'N', $i;
         $a =~ s/^0*//;
-        my $q = &recsas(&booth($a));
+        my $q = &$subsas(&booth($a));
         $psum += $q;
         $q > $pmax and $pmax = $q;
         $mode eq 'm' and next;
@@ -102,7 +114,7 @@ elsif ($mode eq 'w')
         @sas = ();
         my $a = unpack 'B*', pack 'N', $i;
         $a =~ s/^0*//;
-        my $q = &recsas(&booth($a));
+        my $q = &$subsas(&booth($a));
         $q == $qmax && @w < 32 and push @w, $a;
         $q > $qmax or next;
         $qmax = $q;
@@ -188,3 +200,7 @@ EOF
     length($1) and $t .= ' << '.length($1);
     push @sas, "u".(@sas+1).' = '.("$t + $u","$t - $u","$u - $t")[$g]."\n";
     return scalar @sas; }
+
+sub gsas
+  {
+  }
