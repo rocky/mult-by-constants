@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.11 2000/11/29 01:10:01 vlefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.12 2000/11/29 14:17:45 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -208,17 +208,19 @@ sub gsas
     while (@x)
       {
         $level > 2
-          and print "\ngsas: ", join('+', map { $$_{'s'} } @x), "\n";
-        my %w;
+          and print "\ngsas: ", join('+', map { $$_{'s'} } @x),
+                    "\n      ", join(' ', map { &ind($$_{'s'}) } @x),
+                    "\n";
+        my (%v,%w);
         foreach (0 .. $#x)
           {
             my ($s1,$d1) = @{$x[$_]}{'s','d'};
-            my $key = $_;
+            my $key1 = $_;
             foreach ($_ .. $#x)
               {
                 my ($s2,$d2) = @{$x[$_]}{'s','d'};
-                my $same = $_ == $key;
-                $key .= ",$_";
+                my $same = $_ == $key1;
+                my $key2 = "$key1,$_,";
                 my $i1;
                 foreach $i1 (@$d1)
                   {
@@ -226,9 +228,11 @@ sub gsas
                     my $i2;
                     foreach $i2 (@$d2)
                      {
+                       $same && $i1 <= $i2 and next;
                        my $b2 = substr($s2, -($i2+1), 1);
-                       $w{"$key,".($i1-$i2).$sign{$b1.$b2}}++
-                         unless ($same && $i1 <= $i2);
+                       my $key = $key2.($i1-$i2).$sign{$b1.$b2};
+                       push @{$v{$key}}, $i2;
+                       $w{$key}++;
                      }
                   }
               }
@@ -237,15 +241,18 @@ sub gsas
         if ($level > 3)
           { my $i = $#d;
             do
-              { my @a = $d[$i] =~ /^(\d+),(\d+),(\d+)([-+])$/ or die;
-                printf "%3d, %3d, %3d, %s, w = %d\n", @a, $w{$d[$i]}; }
+              {
+                my $key = $d[$i];
+                my @a = $key =~ /^(\d+),(\d+),(\d+)([-+])$/ or die;
+                printf "%3d, %3d, %3d, %s, w = $w{$key} (@{$v{$key}})\n", @a;
+              }
             while (--$i >= 0); }
-        my $d;
+        my ($c,$d);
         my $w = 0;
         while ($w{$d = pop @d} > $w)
           {
             my ($i1,$i2) = $d =~ /^(\d+),(\d+),/ or die;
-            $i1 != $i2 and $w = $w{$d}, last;
+            $i1 != $i2 and ($c,$w) = ($d,$w{$d}), last;
 
           }
 exit;
@@ -261,3 +268,10 @@ sub makeind
       { push @d, $i unless (substr($s, -($i+1), 1) eq '0'); }
     $level > 3 and print "\nmakeind: $s (@d).\n";
     return { 's' => $s, 'd' => \@d }; }
+
+sub ind
+  { my $s = $_[0];
+    my ($i,$r);
+    for ($i = length($s) - 1; $i >= 0; $i--)
+      { $r .= $i % 10; }
+    return $r; }
