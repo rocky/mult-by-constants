@@ -1,10 +1,11 @@
 #!/usr/local/bin/perl
 
-$RCSID = '$Id: patterns 1.1 2000/02/28 17:56:46 vlefevre Exp vlefevre $';
+use strict;
 
-($proc) = $RCSID =~ /Id: (\S+)/ or die;
+my $RCSID = '$Id: patterns 1.2 2000/02/28 18:24:42 vlefevre Exp lefevre $';
+my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
-$Usage = <<EOF;
+my $Usage = <<EOF;
 $proc <mode> <args...>
 
 Mode a:
@@ -18,8 +19,10 @@ Mode w:
 EOF
 
 @ARGV > 1 or die $Usage;
-$mode = shift;
-@sign = ('+','-');
+my $mode = shift;
+my @sign = ('+','-');
+my $level = 0;
+my @sas;
 
 if ($mode eq 'a')
   {
@@ -34,7 +37,7 @@ if ($mode eq 'a')
   }
 elsif ($mode eq 'w')
   {
-    my ($i,$n);
+    my ($i,$n,@w);
 
     ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
     my $qmax = 0;
@@ -70,7 +73,7 @@ sub recsas
     $s =~ s/0*$//;
     my $l = length($s) - 1;
     $l or return 0;
-    my ($i,$c,$d,$w,$t,$u,$f,$g,@p,@n,%w);
+    my ($i,$j,$c,$d,$w,$t,$u,$f,$g,@p,@n,%w);
     for($i=0;$i<=$l;$i++)
       { my $d = substr $s, $l-$i, 1;
         $d eq 'P' and push @p, $i;
