@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.10 2001/02/02 14:17:52 lefevre Exp lefevre $
+ * $Id: qtree.c 1.11 2001/02/02 14:34:02 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -13,6 +13,7 @@
  *   -DPARENTS   save the parents a and b in the structure (not useful
  *               for the moment)
  *   -DRESULTS   write information to stdout each time a value is found
+ *   -DLOWMEM    low memory (--> PARENTS is undefined)
  *
  * Usage: qtree <cmax> <m> [<dest_file>]
  *   cmax: maximal cost (-1 if no maximal cost)
@@ -24,6 +25,83 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#ifdef LOWMEM
+
+#undef PARENTS
+
+#define COST(X) t[X]
+
+#define FRST(X) X = first[c##X], v##X = u[c##X]
+
+#define NEXT(X) do { \
+    long k; \
+    k = *(v##X++); \
+    if (k && COST(X+k) == c##X) \
+      X += k; \
+    else \
+    { \
+      k += *(v##X++) << 8; \
+      if (k && COST(X+k) == c##X) \
+        X += k; \
+      else \
+      { \
+        k += *(v##X++) << 16; \
+        if (k && COST(X+k) == c##X) \
+          X += k; \
+        else \
+        { \
+          k += *(v##X++) << 24; \
+          if (k) \
+            X += k; \
+          else \
+            X = -1; \
+        } \
+      } \
+    } \
+  } while (0)
+
+#define SETNEXT(X,V)
+
+static size_t setu0(char *t, char *z, unsigned char *v)
+{
+  size_t s = 4;
+  long d = 0;
+  int c;
+
+  c = *t;
+  while (++d, ++t <= z)
+    if (*t == c)
+      for (; d; d >>= 8)
+      {
+        s++;
+        if (v)
+          *(v++) = (unsigned char) d;
+      }
+  if (v)
+    v[0] = v[1] = v[2] = v[3] = 0;
+  return s;
+}
+
+static void setu(char *t, char *z, unsigned char **u)
+{
+  *u = malloc(setu0(t, z, NULL));
+  if (*u == NULL)
+  {
+    fprintf(stderr, "qtree: out of memory!\n");
+    exit(7);
+  }
+  (void) setu0(t, z, *u);
+}
+
+#else
+
+#define COST(X) t[X].cost
+#define FRST(X) X = first[c##X]
+#define NEXT(X) X = t[X].next
+#define SETNEXT(X,V) t[X].next = V
+
+#endif
+
 #ifdef PARENTS
 #define ADDPARENTS(A, B) \
   t[n].a = (A); \
@@ -33,17 +111,17 @@
 #endif
 
 #define VALID(A, B) do { \
-  t[n].cost = c; \
-  ADDPARENTS(A, B) \
-  if (n < nmin) nmin = n; \
-  r--; \
-  } while (0) \
+    COST(n) = c; \
+    ADDPARENTS(A, B) \
+    if (n < nmin) nmin = n; \
+    r--; \
+  } while (0)
 
 #ifdef RESULTS
 
 #define EMIT(a, b, n, c, o) emit(a, b, n, c, o)
 
-void emit(long a, long b, long n, int c, int o)
+static void emit(long a, long b, long n, int c, int o)
 {
   printf("Cost %d: %8ld %c %8ld -> %8ld\n", c, a, o, b, n);
 }
@@ -53,6 +131,13 @@ void emit(long a, long b, long n, int c, int o)
 #define EMIT(a, b, n, c, o)
 
 #endif
+
+#ifdef LOWMEM
+
+typedef signed char CELL;
+CELL cost;
+
+#else
 
 struct cell
 {
@@ -65,12 +150,18 @@ struct cell
 
 typedef struct cell CELL;
 
+#endif
+
 int main(int argc, char **argv)
 {
   long h, i, m, r;
   int c, cmax;
   CELL *t;
   long *first;
+
+#ifdef LOWMEM
+  unsigned char **u;
+#endif
 
   if (argc != 3 && argc != 4)
   {
@@ -105,17 +196,17 @@ int main(int argc, char **argv)
   }
 
   for (i = 2; i <= m; i++)
-    t[i].cost = -1;  /* not valid yet */
+    COST(i) = -1;  /* not valid yet */
 
-  t[0].cost = 0;
+  COST(0) = 0;
   r = m;  /* number of unitialized cells */
   for (h = 0, i = 1, c = 0; i <= m; h = i, i <<= 1, c++)
   {
-    t[i].cost = 0;
-    t[h].next = i;
+    COST(i) = 0;
+    SETNEXT(h,i);
     r--;
   }
-  t[h].next = -1;  /* last element in list */
+  SETNEXT(h,-1);  /* last element in list */
 
   first = malloc(c * sizeof(*first));
   if (first == NULL)
@@ -125,104 +216,141 @@ int main(int argc, char **argv)
   }
   first[0] = 0;
 
+#ifdef LOWMEM
+  u = malloc(c * sizeof(*u));
+  if (u == NULL)
+  {
+    fprintf(stderr, "qtree: out of memory!\n");
+    exit(6);
+  }
+  setu((char *) t, (char *) t + m, u);
+#endif
+
   for (c = 1; r && (cmax < 0 || c <= cmax); c++)
   {
     /* find all the positive integers n such that f_m(n) = c */
 
-    long next;
     long nmin = LONG_MAX;
     long a, b;
     int ca, cb;
 
+#ifdef LOWMEM
+    char *va, *vb;
+#else
+    long next;
+#endif
+
     for (ca = 0, cb = c - 1 - ca; cb >= ca; ca++, cb--)
-      for (a = first[ca]; a >= 0; a = t[a].next)
-      {
-        for (b = first[cb]; (unsigned long) b < a; b = t[b].next)
-        { /* loop 1 */
+      for (FRST(a); a >= 0;)
+      { /* loop a */
+
+        FRST(b);
+
+        while ((unsigned long) b < a)
+        { /* loop b1 */
           long n;
 
           n = a+b;
-          if (n <= m && t[n].cost < 0)
+          if (n <= m && COST(n) < 0)
           {
             EMIT(a, b, n, c, '+');
             VALID(a, b);
           }
 
           n = a-b;
-          if (t[n].cost < 0)
+          if (COST(n) < 0)
           {
             EMIT(a, b, n, c, '-');
             VALID(a, -b);
           }
-        } /* loop 1 */
 
-        for (; b >= 0; b = t[b].next)
-        { /* loop 2 */
+          NEXT(b);
+        } /* loop b1 */
+
+        while (b >= 0)
+        { /* loop b2 */
           long n;
 
           n = a+b;
           if (n > m) break;
-          if (t[n].cost < 0)
+          if (COST(n) < 0)
           {
             EMIT(a, b, n, c, '+');
             VALID(a, b);
           }
 
           n = b-a;
-          if (t[n].cost < 0)
+          if (COST(n) < 0)
           {
             EMIT(a, b, n, c, '-');
             VALID(a, -b);
           }
-        } /* loop 2 */
 
-        for (; b >= 0; b = t[b].next)
-        { /* loop 3 */
+          NEXT(b);
+        } /* loop b2 */
+
+        while (b >= 0)
+        { /* loop b3 */
           long n;
 
           n = b-a;
-          if (t[n].cost < 0)
+          if (COST(n) < 0)
           {
             EMIT(a, b, n, c, '-');
             VALID(a, -b);
-          } /* loop 3 */
-        }
-      }
+          }
+
+          NEXT(b);
+        } /* loop b3 */
+
+        NEXT(a);
+      } /* loop a */
 
     for (ca = 1, cb = c - ca; cb >= ca; ca++, cb--)
-      for (a = first[ca]; a >= 0; a = t[a].next)
-        for (b = first[cb]; b >= 0; b = t[b].next)
+      for (FRST(a); a >= 0;)
+      {
+        for (FRST(b); b >= 0;)
         {
           unsigned long long n;
           n = (unsigned long long) a * (unsigned long long) b;
           if (n > m) break;
-          if (t[n].cost < 0)
+          if (COST(n) < 0)
           {
             EMIT(a, b, (long) n, c, '*');
             VALID(-a, b);
           }
+          NEXT(b);
         }
+        NEXT(a);
+      }
 
     for (b = 3; b <= m; b++)
-      if (t[b].cost == c && (b & 1 || t[b>>1].cost != c))
+      if (COST(b) == c && (b & 1 || COST(b>>1) != c))
     {
       unsigned long n;
       for (n = b, a = 2; (n <<= 1) <= m; a <<= 1)
-        if (t[n].cost < 0)
+        if (COST(n) < 0)
         {
           EMIT(a, b, n, c, '*');
           VALID(-a, b);
         }
     }
 
-    first[c] = next = nmin;
+    first[c] = nmin;
+
+#ifdef LOWMEM
+    setu((char *) t + nmin, (char *) t + m, u + c);
+#else
+    next = nmin;
     for (b = next; b <= m; b++)
-      if (t[b].cost == c)
+      if (COST(b) == c)
       {
-        t[next].next = b;
+        SETNEXT(next,b);
         next = b;
       }
-    t[next].next = -1;
+    SETNEXT(next,-1);
+#endif
+
     printf("Nmin(%d) = %ld\n", c, nmin);
     fflush(stdout);
   }
@@ -239,12 +367,12 @@ int main(int argc, char **argv)
     }
     for (i = 0; i <= m; i++)
     {
-      if (t[i].cost > 255)
+      if (COST(i) > 126)
       {
         fprintf(stderr, "qtree: cost too high!\n");
         exit(7);
       }
-      if (putc(t[i].cost, f) < 0)
+      if (putc(COST(i), f) < 0)
       {
         fprintf(stderr, "qtree: cannot write to file!\n");
         exit(8);
