@@ -1,15 +1,26 @@
 /*
- * $Id: dagsearch.c 1.11 2002/12/17 02:17:03 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.12 2002/12/19 13:54:02 lefevre Exp lefevre $
  *
- * Usage: dagsearch <mrec> <mmax> <cost> [ <cinf> <csup> ]
+ * Usage: dagsearch <mrec> <mmax> <cost> [ <cinf> <csup> <code> ]
  *   mrec: maximum recorded value
  *   mmax: maximum considered value in the search
  *   cost: file where the costs are saved
  *   cinf: file where the cinf values are saved
  *   csup: file where the csup values are saved
+ *   code: file where the codes corresponding to cinf and csup are saved
  *   standard input: list of DAGs (e.g. given by gendags)
  *
  * Define SHIFTS to compute cinf and csup.
+ *
+ * In practice, searches will be performed with DAGs whose length is
+ * not larger than 6. Thus, a code can be encoded in 8 bytes: 2 bytes
+ * for the DAG number and one byte for each elementary operation: for
+ * each operation, the type of the operation is encoded in the most
+ * significant 2 bits and the shift count (assumed to be <= 63) is
+ * stored in the other 6 bits. When the shift count is 0, the shifted
+ * value is assumed to be the second one; thus the byte corresponding
+ * to an operation is never 0. Therefore, the sequences shorter than
+ * 8 bytes can be padded with null bytes.
  */
 
 #include <stdio.h>
@@ -37,9 +48,28 @@ typedef unsigned long int VALUE;
 
 #define DIST(x,y) ((x) >= (y) ? (x) - (y) : (y) - (x))
 
+#ifdef SHIFTS
+void stcode(unsigned char *code, int *o, int *r, int *s,
+            unsigned int line, int q)
+{
+  int i;
+
+  code[0] = (unsigned char) line;
+  code[1] = (unsigned char) (line >> 8);
+  code++;
+  for (i = 1; i <= q; i++)
+    *(++code) = (o[i] << 7) | (r[i] << 6) | s[i];
+  while (i++ <= 6)
+    *(++code) = 0;
+}
+#endif
+
 void dagsearch(int q, int *dag, unsigned char *cost,
 #ifdef SHIFTS
-               unsigned char *cinf, unsigned char *csup,
+               unsigned char *cinf,
+               unsigned char *csup,
+               unsigned char *code,
+               unsigned int line,
 #endif
                long mrec, long mmax)
 {
@@ -131,19 +161,22 @@ void dagsearch(int q, int *dag, unsigned char *cost,
               cost[v[i]] = i;
               OUT("   -   Cost(%3" VALUEFMT ") = %d", v[i], i);
 #ifdef SHIFTS
-              {
-                unsigned int cmax = 0;
-                int j;
-                for (j = 0; j < i; j++)
-                  if (sh[j] > cmax)
-                    cmax = sh[j];
-                cinf[v[i]] = cmax;
-                csup[v[i]] = cmax;
-              }
+              if (v[i] & 1)
+                {
+                  unsigned int cmax = 0;
+                  int j;
+                  for (j = 0; j < i; j++)
+                    if (sh[j] > cmax)
+                      cmax = sh[j];
+                  cinf[v[i]] = cmax;
+                  csup[v[i]] = cmax;
+                  stcode(code + (v[i]<<3) - 8, o, r, s, line, i);
+                  stcode(code + (v[i]<<3), o, r, s, line, i);
+                }
 #endif
             }
 #ifdef SHIFTS
-          if (cost[v[i]] == i)
+          if ((v[i] & 1) && cost[v[i]] == i)
             {
               unsigned int cmax = 0;
               int j;
@@ -151,9 +184,15 @@ void dagsearch(int q, int *dag, unsigned char *cost,
                 if (sh[j] > cmax)
                   cmax = sh[j];
               if (cinf[v[i]] > cmax)
-                cinf[v[i]] = cmax;
+                {
+                  cinf[v[i]] = cmax;
+                  stcode(code + (v[i]<<3) - 8, o, r, s, line, i);
+                }
               if (csup[v[i]] < cmax)
-                csup[v[i]] = cmax;
+                {
+                  csup[v[i]] = cmax;
+                  stcode(code + (v[i]<<3), o, r, s, line, i);
+                }
             }
 #endif
         }
@@ -186,10 +225,10 @@ void save(unsigned char *array, VALUE size, char *filename)
 int main(int argc, char **argv)
 {
   VALUE mrec, mmax;
-  unsigned long line = 0;
+  unsigned int line = 0;
   unsigned char *cost;
 #ifdef SHIFTS
-  unsigned char *cinf, *csup;
+  unsigned char *cinf, *csup, *code;
 #endif
 
 #ifndef SHIFTS
@@ -199,10 +238,10 @@ int main(int argc, char **argv)
       exit(1);
     }
 #else
-  if (argc != 6)
+  if (argc != 7)
     {
-      fprintf(stderr,
-              "Usage: dagsearch <mrec> <mmax> <cost> <cinf> <csup>\n");
+      fprintf(stderr, "Usage: dagsearch <mrec> <mmax>"
+              " <cost> <cinf> <csup> <code>\n");
       exit(1);
     }
 #endif
@@ -244,13 +283,15 @@ int main(int argc, char **argv)
 #ifdef SHIFTS
   cinf = malloc(mrec+1);
   csup = malloc(mrec+1);
-  if (cinf == NULL || csup == NULL)
+  code = malloc((mrec+1) << 3);
+  if (cinf == NULL || csup == NULL || code == NULL)
     {
       fprintf(stderr, "dagsearch: out of memory!\n");
       exit(10);
     }
   cinf[0] = csup[0] = 0;
   cinf[1] = csup[1] = 0;
+  memset(code, 0, 16);
 #endif
 
   while (1)
@@ -265,14 +306,14 @@ int main(int argc, char **argv)
         {
           if (q > QMAX)
             {
-              fprintf(stderr, "dagsearch: too many nodes at line %lu\n",
+              fprintf(stderr, "dagsearch: too many nodes at line %u\n",
                       line);
               exit(6);
             }
           if (scanf("(%7[(),0-9])", buffer) != 1 ||
               sscanf(buffer, "%d,%d", dag+2*q, dag+2*q+1) != 2)
             {
-              fprintf(stderr, "dagsearch: input error at line %lu\n", line);
+              fprintf(stderr, "dagsearch: input error at line %u\n", line);
               exit(7);
             }
           scanf("%*[\t ]");
@@ -282,13 +323,13 @@ int main(int argc, char **argv)
         {
           if (feof(stdin))
             return 0;
-          fprintf(stderr, "dagsearch: input error at line %lu\n", line);
+          fprintf(stderr, "dagsearch: input error at line %u\n", line);
           exit(8);
         }
 
       dagsearch(q, dag, cost,
 #ifdef SHIFTS
-                cinf, csup,
+                cinf, csup, code, line,
 #endif
                 mrec, mmax);
 
@@ -313,6 +354,7 @@ int main(int argc, char **argv)
 #ifdef SHIFTS
       save(cinf, mrec+1, argv[4]);
       save(csup, mrec+1, argv[5]);
+      save(code, (mrec+1) << 3, argv[6]);
 #endif
     }
 }
