@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.15 2001/02/27 11:00:59 lefevre Exp lefevre $
+ * $Id: qtree.c 1.16 2001/02/28 14:10:44 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -88,6 +88,7 @@ static void setu(char *t, char *z, unsigned char **u)
   unsigned long s;
   s = setu0(t, z, NULL);
   printf("Memory requested: %lu bytes\n", s);
+  fflush(stdout);
   *u = malloc(s);
   if (*u == NULL)
   {
