@@ -1,7 +1,7 @@
 /*
  * Multiplication by a Constant -- Bernstein's Algorithm
  *
- * Usage: bernstein <constant>
+ * Usage: bernstein <mode> [ <constant> ... ]
  */
 
 #include <stdlib.h>
@@ -11,10 +11,12 @@
 
 #ifdef LONGLONG
 typedef unsigned long long int VALUE;
-#define STRTOVALUE(S) strtoull(S, (void *) NULL, 0)
+#define VALUEFMT "llu"
+#define STRTOVALUE(S) strtoull(S, (char **) NULL, 0)
 #else
 typedef unsigned long int VALUE;
-#define STRTOVALUE(S) strtoul(S, (void *) NULL, 0)
+#define VALUEFMT "lu"
+#define STRTOVALUE(S) strtoul(S, (char **) NULL, 0)
 #endif
 
 #ifndef ADD_COST
@@ -37,6 +39,8 @@ typedef unsigned long int VALUE;
 #define odd(n) ((n) & 1)
 #define even(n) (!odd(n))
 
+enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST };
+
 typedef enum { NOOP, ADD1, SUB1, FADD, FSUB } OP;
 
 typedef struct node {
@@ -50,8 +54,10 @@ typedef struct node {
 
 
 static NODE *hash_table[HASH_SIZE];
+int mode;
 
 void init_hash(void);
+VALUE get_cst(char *s);
 NODE *get_node(VALUE n);
 NODE *make_node(VALUE n);
 void try(VALUE n, NODE *node, OP opcode, unsigned int cost);
@@ -60,25 +66,35 @@ void bernstein(VALUE n);
 
 int main(int argc, char **argv)
 {
-  VALUE n;
-
-  if (argc != 2)
+  if (argc < 2)
   {
-    fprintf(stderr, "Usage: bernstein <constant>\n");
-    exit(1);
+    fprintf(stderr, "Usage: bernstein <mode> [ <constant> ... ]\n");
+    exit(EXIT_USAGE);
   }
 
-  n = STRTOVALUE(argv[1]);
-  if (errno || n == 0 || even(n))
+  mode = atoi(argv[1]);
+  if (errno)
   {
-    fprintf(stderr, "bernstein: bad constant '%s'\n", argv[1]);
-    exit(2);
+    fprintf(stderr, "bernstein: bad mode\n");
+    exit(EXIT_BADMODE);
   }
 
   init_hash();
-  bernstein(n);
 
-  return 0;
+  if (argc > 2)
+  {
+    unsigned int i;
+    for (i = 2; i < argc; i++)
+      bernstein(get_cst(argv[i]));
+  }
+  else
+  {
+    char buffer[64];
+    while (scanf("%63s", buffer) == 1)
+      bernstein(get_cst(buffer));
+  }
+
+  return EXIT_OK;
 }
 
 
@@ -87,6 +103,19 @@ void init_hash(void)
   unsigned int i;
   for (i = 0; i < HASH_SIZE; i++)
     hash_table[i] = NULL;
+}
+
+
+VALUE get_cst(char *s)
+{
+  VALUE n;
+  n = STRTOVALUE(s);
+  if (errno || n == 0 || even(n))
+  {
+    fprintf(stderr, "bernstein: bad constant '%s'\n", s);
+    exit(EXIT_BADCONST);
+  }
+  return n;
 }
 
 
@@ -120,7 +149,7 @@ NODE *make_node(VALUE n)
   if (!node)
   {
     fprintf(stderr, "bernstein: out of memory!\n");
-    exit(3);
+    exit(EXIT_MEMORY);
   }
   node->parent = NULL;
   node->value = n;
@@ -177,8 +206,8 @@ void bernstein(VALUE n)
   NODE *node;
 
   node = get_node(n);
-  printf("Cost = %u\n", node->cost);
+  printf("Cost(%" VALUEFMT ") = %u\n", n, node->cost);
 }
 
 
-/* $Id$ */
+/* $Id: bernstein.c 1.1 2000/11/21 01:16:57 vlefevre Exp lefevre $ */
