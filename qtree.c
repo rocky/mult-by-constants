@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.6 2001/02/01 12:56:33 lefevre Exp lefevre $
+ * $Id: qtree.c 1.7 2001/02/01 13:10:47 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -15,7 +15,8 @@
  *   -DRESULTS   write information to stdout each time a value is found
  *   -DSORT      sort the linked lists (should be faster)
  *
- * Usage: qtree <m> [<dest_file>]
+ * Usage: qtree <cmax> <m> [<dest_file>]
+ *   cmax: maximal cost (-1 if no maximal cost)
  *   m: value of m (decimal number)
  *   dest_file: if present, file where the values of f_m are stored
  */
@@ -77,17 +78,23 @@ typedef struct cell CELL;
 int main(int argc, char **argv)
 {
   long h, i, m, r;
-  int c;
+  int c, cmax;
   CELL *t;
   long *first;
 
-  if (argc != 2 && argc != 3)
+  if (argc != 3 && argc != 4)
   {
-    fprintf(stderr, "Usage: qtree <m> [<dest_file>]\n");
+    fprintf(stderr, "Usage: qtree <cmax> <m> [<dest_file>]\n");
     exit(1);
   }
 
-  m = atol(argv[1]);
+  cmax = atoi(argv[1]);
+  if (cmax < 0)
+    printf("No maximal cost\n");
+  else
+    printf("Maximal cost: %d\n", cmax);
+
+  m = atol(argv[2]);
   if (m < 1)
   {
     fprintf(stderr, "qtree: m must be at least 1\n");
@@ -128,7 +135,7 @@ int main(int argc, char **argv)
   }
   first[0] = 0;
 
-  for (c = 1; r; c++)
+  for (c = 1; r && (cmax < 0 || c <= cmax); c++)
   {
     /* find all the positive integers n such that f_m(n) = c */
 
@@ -208,11 +215,11 @@ int main(int argc, char **argv)
     fflush(stdout);
   }
 
-  if (argc == 3)
+  if (argc == 4)
   {
     FILE *f;
 
-    f = fopen(argv[2], "wb");
+    f = fopen(argv[3], "wb");
     if (f == NULL)
     {
       fprintf(stderr, "qtree: cannot create file!\n");
