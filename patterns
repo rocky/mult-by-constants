@@ -2,15 +2,16 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.24 2003/06/11 15:59:03 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.25 2003/06/11 16:01:10 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
 $proc <mode> <algo> <args...>
 
 Mode a:
-  Arg1... odd binary number (or decimal with a 'd', e.g., d17 or 17d).
-  Arg2... output level (optional).
+  Arg1... output level.
+  Arg2... odd binary number (or decimal with a 'd', e.g., d17 or 17d).
+  Args... other numbers (optional), for algo g only.
   Out.... SAS-chain.
 
 Mode b:
@@ -56,22 +57,30 @@ else
 
 if ($mode eq 'a')
   {
-    my $a = shift;
-    if ($a =~ /^(d\d+|\d+d)$/)
-      {
-        my ($d) = $a =~ /(\d+)/ or die;
-        $a = '';
-        while ($d)
-          { $a = ($d & 1 ? '1' : '0').$a;
-            $d >>= 1; }
-      }
-    $a =~ /^[01]*1$/ or die $Usage;
     $level = shift;
-    my $b = &booth($a);
-    $level > 1 and print "Booth recoding: $b.\n";
-    my $q = &$subsas($b);
+    $algo eq 'g' || @ARGV == 1 or die $Usage;
+    my @b;
+    foreach (@ARGV)
+      {
+        if (/^(d\d+|\d+d)$/)
+          {
+            my ($d) = /(\d+)/ or die;
+            $_ = '';
+            while ($d)
+              { $_ = ($d & 1 ? '1' : '0').$_;
+                $d >>= 1; }
+          }
+        if (/^[01]*1$/)
+          {
+            $_ = &booth($_);
+            $level > 1 and print "Booth recoding: $_.\n";
+          }
+        /^(P|P0([NP]?0)*[NP])$/ or die $Usage;
+        push @b, $_;
+      }
+    my $q = &$subsas(@b);
     $level > 1 and print "\n";
-    print "Cost($a) = $q\n";
+    print "Cost(", join(',', @ARGV), ") = $q\n";
     $level and print @sas;
   }
 elsif ($mode eq 'm' || $mode eq 'b')
@@ -247,7 +256,7 @@ EOF
 
 sub gsas
   { my $cost = 0;
-    my @x = (&makeind($_[0]));
+    my @x = map &makeind($_), @_;
     my %sign = ('PP' => '+', 'PN' => '-', 'NP' => '-', 'NN' => '+');
     while (@x)
       {
