@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.7 2001/02/01 13:10:47 lefevre Exp lefevre $
+ * $Id: qtree.c 1.8 2001/02/01 13:22:07 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -175,7 +175,12 @@ int main(int argc, char **argv)
         {
           unsigned long long n;
           n = (unsigned long long) a * (unsigned long long) b;
+#ifdef SORT
+          if (n > m) break;
+          if (t[n].cost < 0)
+#else
           if (n <= m && t[n].cost < 0)
+#endif
           {
             EMIT(a, b, (long) n, c, '*');
             VALID(-a, b);
