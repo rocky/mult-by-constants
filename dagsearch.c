@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.7 2001/05/03 13:07:12 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.8 2001/05/04 00:26:33 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -128,10 +128,9 @@ void dagsearch(int q, int *dag, unsigned char *cost, long mrec, long mmax)
 
 int main(int argc, char **argv)
 {
-  VALUE mrec, mmax, v;
+  VALUE mrec, mmax;
   unsigned long line = 0;
   unsigned char *cost;
-  FILE *f;
 
   if (argc != 4)
   {
@@ -170,12 +169,16 @@ int main(int argc, char **argv)
     exit(10);
   }
   memset(cost, -1, mrec+1);
+  cost[0] = 0;
+  cost[1] = 0;
 
   while (1)
   {
+    VALUE v;
     int q;
     int dag[2*QMAX];
     char buffer[8];
+    FILE *f;
 
     line++;
     for (q = 0; scanf("%1[\n]", buffer) == 0; q++)
@@ -198,45 +201,41 @@ int main(int argc, char **argv)
     if (!q)
     {
       if (feof(stdin))
-        break;
+        return 0;
       fprintf(stderr, "dagsearch: input error line %lu (bad format?)\n",
               line);
       exit(8);
     }
 
     dagsearch(q, dag, cost, mrec, mmax);
-  }
 
-  cost[0] = 0;
-  cost[1] = 0;
-  for (v = 1; v < mrec; v += 2)
-  {
-    VALUE w;
-    int c;
+    for (v = 1; v < mrec; v += 2)
+    {
+      VALUE w;
+      int c;
 
-    c = cost[v];
-    w = v;
-    while ((w <<= 1) <= mrec)
-      if (cost[w] > c)
-        cost[w] = c;
-  }
+      c = cost[v];
+      w = v;
+      while ((w <<= 1) <= mrec)
+        if (cost[w] > c)
+          cost[w] = c;
+    }
 
-  f = fopen(argv[3], "wb");
-  if (f == NULL)
-  {
-    fprintf(stderr, "dagsearch: cannot create file\n");
-    exit(11);
+    f = fopen(argv[3], "wb");
+    if (f == NULL)
+    {
+      fprintf(stderr, "dagsearch: cannot create file\n");
+      exit(11);
+    }
+    if (fwrite(cost, mrec+1, 1, f) != 1)
+    {
+      fprintf(stderr, "dagsearch: cannot write to file\n");
+      exit(12);
+    }
+    if (fclose(f))
+    {
+      fprintf(stderr, "dagsearch: cannot close file\n");
+      exit(13);
+    }
   }
-  if (fwrite(cost, mrec+1, 1, f) != 1)
-  {
-    fprintf(stderr, "dagsearch: cannot write to file\n");
-    exit(12);
-  }
-  if (fclose(f))
-  {
-    fprintf(stderr, "dagsearch: cannot close file\n");
-    exit(13);
-  }
-
-  return 0;
 }
