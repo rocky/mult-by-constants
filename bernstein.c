@@ -35,14 +35,20 @@ typedef unsigned long int VALUE;
 #define HASH_SIZE 511
 #endif
 
+#ifdef PRUNE
+#define PLIMIT , &limit
+#else
+#define PLIMIT
+#endif
+
 
 #define odd(n) ((n) & 1)
 #define even(n) (!odd(n))
 
 enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST };
 
-typedef enum { NOOP, ADD1, SUB1, FADD, FSUB } OP;
-static char opsign[] = { ' ', '+', '-', '+', '-' };
+typedef enum { INVALID, NOOP, ADD1, SUB1, FADD, FSUB } OP;
+static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
 
 typedef struct node {
   struct node *parent;  /* node used to generate the current node  */
@@ -59,10 +65,15 @@ static int mode;
 
 void init_hash(void);
 VALUE get_cst(char *s);
+#ifdef PRUNE
+NODE *get_node(VALUE n, unsigned int limit);
+void try(VALUE n, NODE *node, OP opcode,
+    unsigned int cost, unsigned int shift, unsigned int *limit);
+#else
 NODE *get_node(VALUE n);
-NODE *make_node(VALUE n);
 void try(VALUE n, NODE *node, OP opcode,
     unsigned int cost, unsigned int shift);
+#endif
 void bernstein(VALUE n);
 unsigned int emit_code(NODE *node);
 
@@ -122,7 +133,11 @@ VALUE get_cst(char *s)
 }
 
 
+#ifdef PRUNE
+NODE *get_node(VALUE n, int unsigned limit)
+#else
 NODE *get_node(VALUE n)
+#endif
 {
   unsigned int hash;
   NODE *node;
@@ -133,20 +148,14 @@ NODE *get_node(VALUE n)
   while (node)
   {
     if (node->value == n)
+    {
+#ifdef PRUNE
+      if (node->opcode == INVALID) goto validate_node;
+#endif
       return node;
+    }
     node = node->next;
   }
-
-  node = make_node(n);
-  node->next = hash_table[hash];
-  hash_table[hash] = node;
-  return node;
-}
-
-
-NODE *make_node(VALUE n)
-{
-  NODE *node;
 
   node = malloc(sizeof *node);
   if (!node)
@@ -156,6 +165,12 @@ NODE *make_node(VALUE n)
   }
   node->parent = NULL;
   node->value = n;
+  node->next = hash_table[hash];
+  hash_table[hash] = node;
+#ifdef PRUNE
+  node->opcode = INVALID;
+validate_node:
+#endif
 
   if (n == 1)
   {
@@ -167,25 +182,31 @@ NODE *make_node(VALUE n)
     VALUE d = 4, dsup;
     int shift = 2;
     dsup = n >> 1;
+
     while (d <= dsup)
     {
       if (n % (d - 1) == 0)
-        try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST, shift);
+        try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST, shift PLIMIT);
       if (n % (d + 1) == 0)
-        try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST, shift);
+        try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST, shift PLIMIT);
       d <<= 1;
       shift++;
     }
-    try(n - 1, node, ADD1, SHIFT_COST + ADD_COST, 0);
-    try(n + 1, node, SUB1, SHIFT_COST + SUB_COST, 0);
+    try(n - 1, node, ADD1, SHIFT_COST + ADD_COST, 0 PLIMIT);
+    try(n + 1, node, SUB1, SHIFT_COST + SUB_COST, 0 PLIMIT);
   }
 
   return node;
 }
 
 
+#ifdef PRUNE
+void try(VALUE n, NODE *node, OP opcode,
+    unsigned int cost, unsigned int shift, unsigned int *limit)
+#else
 void try(VALUE n, NODE *node, OP opcode,
     unsigned int cost, unsigned int shift)
+#endif
 {
   NODE *tmp_node;
 
@@ -195,7 +216,14 @@ void try(VALUE n, NODE *node, OP opcode,
     shift++;
   }
 
+#ifdef PRUNE
+  if (cost > *limit) return;
+  tmp_node = get_node(n, *limit - cost);
+  if (tmp_node->opcode == INVALID) return;
+#else
   tmp_node = get_node(n);
+#endif
+
   cost += tmp_node->cost;
   if (!node->parent || cost < node->cost)
   {
@@ -203,14 +231,28 @@ void try(VALUE n, NODE *node, OP opcode,
     node->cost = cost;
     node->opcode = opcode;
     node->shift = shift;
+#ifdef PRUNE
+    *limit = cost - 1;
+#endif
   }
 }
 
 void bernstein(VALUE n)
 {
   NODE *node;
-
+#ifdef PRUNE
+  VALUE p;
+  unsigned int limit = 0;
+  p = n >> 1;
+  while (p)  /* count the number of 1's in p */
+  {
+    limit += SHIFT_COST + ADD_COST;
+    p &= p-1;
+  }
+  node = get_node(n, limit);
+#else
   node = get_node(n);
+#endif
   printf("Cost(%" VALUEFMT ") = %u\n", n, node->cost);
   if (mode)
     emit_code(node);
@@ -244,4 +286,4 @@ unsigned int emit_code(NODE *node)
 }
 
 
-/* $Id: bernstein.c 1.3 2000/11/21 15:45:51 lefevre Exp vlefevre $ */
+/* $Id: bernstein.c 1.4 2000/11/22 01:49:29 vlefevre Exp lefevre $ */
