@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.2 2001/04/25 12:17:03 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.3 2001/04/30 04:15:25 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -38,6 +38,7 @@ void dagsearch(int q, int *dag, long mmax)
   r = rs - 1;
   s = sh - 1;
   x = vp - 2;
+  dag -= 2;
   v[0] = 1;
   for (i = 0; ;)
   {
@@ -74,14 +75,18 @@ void dagsearch(int q, int *dag, long mmax)
         o[i] = 1;
         r[i] = 0;
         s[i] = 0;
-        v[i] = DIST(v[dag[2*i]], v[dag[2*i+1]]);
+        v[i] = DIST(x[2*i], x[2*i+1]);
       }
       else if (--i)
         goto next;
       else
         return;
     }
-    printf("%3d  %ld\n", i, v[i]);
+    if (v[i] == 0)
+      goto next;
+#ifndef NDEBUG
+    printf("%3d: %3ld  ( %3ld %3ld )\n", i, v[i], x[2*i], x[2*i+1]);
+#endif
   }
 }
 
