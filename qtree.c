@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.9 2001/02/02 13:30:50 lefevre Exp lefevre $
+ * $Id: qtree.c 1.10 2001/02/02 14:17:52 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -136,8 +136,9 @@ int main(int argc, char **argv)
 
     for (ca = 0, cb = c - 1 - ca; cb >= ca; ca++, cb--)
       for (a = first[ca]; a >= 0; a = t[a].next)
-        for (b = first[cb]; b >= 0; b = t[b].next)
-        {
+      {
+        for (b = first[cb]; (unsigned long) b < a; b = t[b].next)
+        { /* loop 1 */
           long n;
 
           n = a+b;
@@ -147,13 +148,46 @@ int main(int argc, char **argv)
             VALID(a, b);
           }
 
-          n = abs(a-b);
-          if (n <= m && t[n].cost < 0)
+          n = a-b;
+          if (t[n].cost < 0)
           {
             EMIT(a, b, n, c, '-');
             VALID(a, -b);
           }
+        } /* loop 1 */
+
+        for (; b >= 0; b = t[b].next)
+        { /* loop 2 */
+          long n;
+
+          n = a+b;
+          if (n > m) break;
+          if (t[n].cost < 0)
+          {
+            EMIT(a, b, n, c, '+');
+            VALID(a, b);
+          }
+
+          n = b-a;
+          if (t[n].cost < 0)
+          {
+            EMIT(a, b, n, c, '-');
+            VALID(a, -b);
+          }
+        } /* loop 2 */
+
+        for (; b >= 0; b = t[b].next)
+        { /* loop 3 */
+          long n;
+
+          n = b-a;
+          if (t[n].cost < 0)
+          {
+            EMIT(a, b, n, c, '-');
+            VALID(a, -b);
+          } /* loop 3 */
         }
+      }
 
     for (ca = 1, cb = c - ca; cb >= ca; ca++, cb--)
       for (a = first[ca]; a >= 0; a = t[a].next)
