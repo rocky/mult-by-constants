@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.1 2001/01/18 15:21:00 lefevre Exp lefevre $
+ * $Id: qtree.c 1.2 2001/01/18 15:48:24 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -14,10 +14,17 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#ifdef PARENTS
+#define ADDPARENTS(A, B) \
+  t[n].a = (A); \
+  t[n].b = (B);
+#else
+#define ADDPARENTS(A, B)
+#endif
+
 #define VALID(A, B) do { \
   t[n].cost = c; \
-  t[n].a = (A); \
-  t[n].b = (B); \
+  ADDPARENTS(A, B) \
   t[n].next = next; \
   next = n; \
   if (n < nmin) nmin = n; \
@@ -42,7 +49,9 @@ void emit(long a, long b, long n, int c, int o)
 struct cell
 {
   int cost;
+#ifdef PARENTS
   long a, b;
+#endif
   long next;
 };
 
