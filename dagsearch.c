@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.6 2001/05/02 02:51:28 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.7 2001/05/03 13:07:12 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -50,6 +50,7 @@ void dagsearch(int q, int *dag, unsigned char *cost, long mrec, long mmax)
   for (i = 0; i < q; i++)
     printf("(%d,%d) ", dag[2*i], dag[2*i+1]);
   printf("]\n");
+  fflush(stdout);
 
   o = op - 1;
   r = rs - 1;
