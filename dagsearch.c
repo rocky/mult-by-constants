@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.10 2002/12/12 09:17:09 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.11 2002/12/17 02:17:03 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <cost> [ <cinf> <csup> ]
  *   mrec: maximum recorded value
@@ -80,7 +80,7 @@ void dagsearch(int q, int *dag, unsigned char *cost,
           x[2*i] = v[dag[2*i]];
           x[2*i+1] = v[dag[2*i+1]];
           o[i] = 0;
-          r[i] = 0;
+          r[i] = 1;
           s[i] = 0;
           v[i] = x[2*i] + x[2*i+1];
         }
@@ -88,17 +88,17 @@ void dagsearch(int q, int *dag, unsigned char *cost,
         {
           x[2*i] = v[dag[2*i]];
           x[2*i+1] = v[dag[2*i+1]];
-          if (r[i] == 0 && s[i])
+          if (r[i] && s[i])
             {
-              x[2*i+1] <<= 1;
-              r[i] = 1;
+              x[2*i] <<= 1;
+              r[i] = 0;
               s[i] = 1;
               v[i] = o[i] ? DIST(x[2*i], x[2*i+1]) : x[2*i] + x[2*i+1];
             }
           else if (o[i] == 0)
             {
               o[i] = 1;
-              r[i] = 0;
+              r[i] = 1;
               s[i] = 0;
               v[i] = DIST(x[2*i], x[2*i+1]);
             }
