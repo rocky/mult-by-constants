@@ -1,0 +1,103 @@
+#!/usr/local/bin/perl
+
+$RCSID = '$Id$';
+
+($proc) = $RCSID =~ /Id: (\S+)/ or die;
+
+$Usage = <<EOF;
+$proc <mode> <args...>
+
+Mode a:
+  Arg1... odd binary number.
+  Arg2... output level (optional).
+  Out.... SAS-chain.
+EOF
+
+@ARGV > 1 or die $Usage;
+$mode = shift;
+
+if ($mode eq 'a')
+  {
+    ($a = "00$ARGV[0]") =~ /^[01]+1$/ or die $Usage;
+    $level = $ARGV[1];
+
+    while ($a =~ /^(.*?)(0*)0(1*)1$/o)
+      { length $3 or ($a,$b) = ($1,$2.'0P'.$b), next;
+        my $z = ('0' x length $3).'N'.$b;
+        ($a,$b) = length $2 ? ($1,$2.'P'.$z) : ($1.'1',$z); }
+
+    $b =~ s/^0*//;
+    $level and print "Booth recoding: $b.\n";
+
+    @sign = ('+','-');
+    &recsas($b);
+    $level and print "\n";
+    print @sas;
+  }
+else
+  { die $Usage; }
+
+sub recsas
+  { my $s = $_[0];
+    $s =~ s/0*$//;
+    my $l = length($s) - 1;
+    $l or return 0;
+    my ($i,$c,$d,$w,$t,$u,$f,$g,@p,@n,%w);
+    for($i=0;$i<=$l;$i++)
+      { my $d = substr $s, $l-$i, 1;
+        $d eq 'P' and push @p, $i;
+        $d eq 'N' and push @n, $i; }
+    print "\nrecsas: $s.\n  P: @p\n  N: @n\n" if ($level > 1);
+    foreach $i (1..$#p) { foreach $j (0..$i-1) { $w{$p[$i]-$p[$j]}++ } }
+    foreach $i (1..$#n) { foreach $j (0..$i-1) { $w{$n[$i]-$n[$j]}++ } }
+    foreach $i (0..$#p) { foreach $j (0..$#n) { $w{-abs($p[$i]-$n[$j])}++ } }
+    my @d = sort { $w{$a} <=> $w{$b} || $a <=> $b } keys %w;
+    if ($level > 2)
+      { my $i = $#d;
+        do
+          { printf "%3d, w = %d\n", $d[$i], $w{$d[$i]} }
+        while (--$i >= 0); }
+    while ($w{$d = pop @d} > $w)
+      { $_ = $s;
+        my $x = 0;
+        my $z = abs($d) - 1;
+        if ($d > 0)
+          {
+            while (s/P(.{$z})P/0${1}p/) { $x++ }
+            while (s/N(.{$z})N/0${1}n/) { $x++ }
+          }
+        else
+          {
+            my ($y,@y);
+            while (($y) = /(P.{$z}N|N.{$z}P)/)
+              { @y = $y =~ /^(.)(.{$z})/ or die;
+                s/$y/0$y[1]\L$y[0]\E/;
+                $x++; }
+          }
+        $x > $w and $w = $x, $c = $d, $t = $_; }
+    $u = $t;
+    $t =~ tr/pn/00/;
+    $u =~ tr/pnPN/PN00/;
+    $f = $c < 0 and $c = -$c;
+    $g = $u =~ /^0*N/ and $u =~ tr/PN/NP/;
+    print <<EOF if ($level > 1);
+    t = $t
+    u = $u
+  --> t $sign[$g] (u << $c $sign[$f] u)
+EOF
+    $u =~ s/^0*//;
+    $i = &recsas($u);
+    push @sas, "u".(@sas+1)." = u$i << $c $sign[$f] u$i\n";
+    $i = @sas;
+    $t =~ s/^0*//;
+    $t or return $i;
+    substr($t,0,1) eq 'P' or $g = 2, $t =~ tr/PN/NP/;
+    $j = &recsas($t);
+    $u =~ /(0*)$/;
+    $u = "u$i";
+    length($1) and $u .= ' << '.length($1);
+    $t =~ /(0*)$/;
+    $t = "u$j";
+    length($1) and $t .= ' << '.length($1);
+    push @sas, "u".(@sas+1).' = '.("$t + $u","$t - $u","$u - $t")[$g]."\n";
+    return scalar @sas; }
