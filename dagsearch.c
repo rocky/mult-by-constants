@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.1 2001/04/19 13:54:55 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.2 2001/04/25 12:17:03 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -15,16 +15,19 @@
 
 #define QMAX 32
 
+#define DIST(x,y) ((x) >= (y) ? (x) - (y) : (y) - (x))
+
 void dagsearch(int q, int *dag, long mmax)
 {
   int i;
-  int next;
   int *o, *r, *s;
+  long *x;
   int op[QMAX];  /* 0: add; 1: sub */
   int rs[QMAX];  /* 0: shift on the 1st value,
                     1: shift on the 2nd value */
   int sh[QMAX];  /* shift count */
-  long v[QMAX];  /* values */
+  long v[QMAX+1];  /* values */
+  long vp[2*QMAX];
 
   printf("DAG [ ");
   for (i = 0; i < q; i++)
@@ -34,18 +37,20 @@ void dagsearch(int q, int *dag, long mmax)
   o = op - 1;
   r = rs - 1;
   s = sh - 1;
+  x = vp - 2;
   v[0] = 1;
-  next = 0;
-  for (i = 1; ;)
+  for (i = 0; ;)
   {
-    if (next)
+    if (i == q)
     {
+    next:
       s[i]++;
       x[2*i+r[i]] <<= 1;
-      v[i] = ;
+      v[i] = o[i] ? DIST(x[2*i], x[2*i+1]) : x[2*i] + x[2*i+1];
     }
     else
     {
+      i++;
       x[2*i] = v[dag[2*i]];
       x[2*i+1] = v[dag[2*i+1]];
       o[i] = 0;
@@ -53,7 +58,7 @@ void dagsearch(int q, int *dag, long mmax)
       s[i] = 0;
       v[i] = x[2*i] + x[2*i+1];
     }
-    while (v[i] > max)
+    while (v[i] > mmax)
     {
       x[2*i] = v[dag[2*i]];
       x[2*i+1] = v[dag[2*i+1]];
@@ -62,18 +67,21 @@ void dagsearch(int q, int *dag, long mmax)
         x[2*i+1] <<= 1;
         r[i] = 1;
         s[i] = 1;
-        v[i] = o[i] ? ABS(x[2*i] - x[2*i+1]) : x[2*i] + x[2*i+1];
+        v[i] = o[i] ? DIST(x[2*i], x[2*i+1]) : x[2*i] + x[2*i+1];
       }
       else if (o[i] == 0)
       {
         o[i] = 1;
         r[i] = 0;
         s[i] = 0;
-        v[i] = ABS(v[dag[2*i]] - v[dag[2*i+1]]);
+        v[i] = DIST(v[dag[2*i]], v[dag[2*i+1]]);
       }
-      else if (--i == 0)
+      else if (--i)
+        goto next;
+      else
         return;
     }
+    printf("%3d  %ld\n", i, v[i]);
   }
 }
 
