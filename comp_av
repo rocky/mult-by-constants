@@ -1,0 +1,46 @@
+#!/usr/local/bin/perl
+
+use strict;
+
+my $RCSID = '$Id: comp_av $';
+my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
+
+my @be = (undef, undef, 1, 2, 6, 14, 32, 73, 164, 353, 780, 1683, 3619,
+          7711, 16421, 34783, 73385, 154397, 324025, 678231, 1416439,
+          2951981, 6142049, 12757929, 26460508, 54795417);
+
+my @ps = (undef, undef, 1, 2, 6, 14, 32, 74, 165, 363, 785, 1695, 3617,
+          7705, 16337, 34508, 72690, 152841, 320246, 670533, 1400170,
+          2920249, 6078399, 12640239, 26230230, 54394053);
+
+my @pg = (undef, undef, 1, 2, 6, 14, 32, 74, 165, 363, 785, 1695, 3617,
+          7705, 16324, 34446, 72443, 152048, 317849, 663457, 1381326,
+          2871387, 5954906, 12334713);
+
+my @am = (undef, undef, 1, 2, 6, 14, 32, 73, 163, 349, 739, 1585, 3423,
+          7278, 15253, 31753, 66700, 139889, 292379, 606048, 1249032,
+          2570931);
+
+print <<EOF;
+Comparison between different algorithms. All the constants are considered.
+
+_ Bernstein's algorithm (bernstein.c)
+_ Patterns in mode 's'
+_ Patterns in mode 'g'
+_ f(a+b) and f(ab) inequalities (qtree.c until 2^22)
+
+m	 Bstein	 Patt.s	 Patt.g	 Ineq.
+EOF
+
+my $m = 2;
+my $t = 1;
+while ($be[$m] || $ps[$m] || $pg[$m] || $am[$m])
+  {
+    print $m;
+    foreach (\@be, \@ps, \@pg, \@am)
+      { print "\t";
+        $_->[$m] and printf "%.5f", $_->[$m]/$t; }
+    print "\n";
+    $m++;
+    $t <<= 1;
+  }
