@@ -42,6 +42,7 @@ typedef unsigned long int VALUE;
 enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST };
 
 typedef enum { NOOP, ADD1, SUB1, FADD, FSUB } OP;
+static char opsign[] = { ' ', '+', '-', '+', '-' };
 
 typedef struct node {
   struct node *parent;  /* node used to generate the current node  */
@@ -54,14 +55,16 @@ typedef struct node {
 
 
 static NODE *hash_table[HASH_SIZE];
-int mode;
+static int mode;
 
 void init_hash(void);
 VALUE get_cst(char *s);
 NODE *get_node(VALUE n);
 NODE *make_node(VALUE n);
-void try(VALUE n, NODE *node, OP opcode, unsigned int cost);
+void try(VALUE n, NODE *node, OP opcode,
+    unsigned int cost, unsigned int shift);
 void bernstein(VALUE n);
+unsigned int emit_code(NODE *node);
 
 
 int main(int argc, char **argv)
@@ -162,27 +165,29 @@ NODE *make_node(VALUE n)
   else
   {
     VALUE d = 4, dsup;
+    int shift = 2;
     dsup = n >> 1;
     while (d <= dsup)
     {
       if (n % (d - 1) == 0)
-        try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST);
+        try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST, shift);
       if (n % (d + 1) == 0)
-        try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST);
+        try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST, shift);
       d <<= 1;
+      shift++;
     }
-    try(n - 1, node, ADD1, SHIFT_COST + ADD_COST);
-    try(n + 1, node, SUB1, SHIFT_COST + SUB_COST);
+    try(n - 1, node, ADD1, SHIFT_COST + ADD_COST, 0);
+    try(n + 1, node, SUB1, SHIFT_COST + SUB_COST, 0);
   }
 
   return node;
 }
 
 
-void try(VALUE n, NODE *node, OP opcode, unsigned int cost)
+void try(VALUE n, NODE *node, OP opcode,
+    unsigned int cost, unsigned int shift)
 {
   NODE *tmp_node;
-  unsigned int shift = 0;
 
   while(even(n))
   {
@@ -207,7 +212,35 @@ void bernstein(VALUE n)
 
   node = get_node(n);
   printf("Cost(%" VALUEFMT ") = %u\n", n, node->cost);
+  if (mode)
+    emit_code(node);
+}
+
+unsigned int emit_code(NODE *node)
+{
+  unsigned int i;
+
+  if (node == NULL)
+    return 0;
+
+  i = emit_code(node->parent);
+  printf("u%u = ", i);
+  if (node->opcode == NOOP)
+  {
+    printf("1");
+  }
+  else
+  {
+    printf("u%u << %u %c ", i-1, node->shift, opsign[node->opcode]);
+    if (node->opcode == ADD1 || node->opcode == SUB1)
+      printf("1");
+    else
+      printf("u%u", i-1);
+  }
+  printf("\n");
+
+  return i+1;
 }
 
 
-/* $Id: bernstein.c 1.1 2000/11/21 01:16:57 vlefevre Exp lefevre $ */
+/* $Id: bernstein.c 1.2 2000/11/21 15:18:21 lefevre Exp lefevre $ */
