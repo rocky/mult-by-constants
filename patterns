@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.19 2000/12/05 10:41:40 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.20 2000/12/05 11:05:36 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -79,12 +79,12 @@ elsif ($mode eq 'm' || $mode eq 'b')
     my ($i,$n,%d);
 
     ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
-    my ($pmax,$psum) = (0,0);
-    my ($bmax,$bsum) = (0,0);
+    my ($pmax,$psum,$pn) = (0,0);
+    my ($bmax,$bsum,$bn) = (0,0);
     if ($mode eq 'b')
       {
         use IPC::Open2;
-        open2(\*RD, \*WR, "./bernstein 0");
+        open2(\*RD, \*WR, "bernstein 0");
         # Note: this program must make sure that it does not take too
         # much memory when caching information about the constants!
       }
@@ -95,12 +95,12 @@ elsif ($mode eq 'm' || $mode eq 'b')
         $a =~ s/^0*//;
         my $q = &$subsas(&booth($a));
         $psum += $q;
-        $q > $pmax and $pmax = $q;
+        $q > $pmax and $pmax = $q, $pn = $i;
         $mode eq 'm' and next;
         print WR "$i\n";
         <RD> =~ /^Cost\($i\) = (\d+)$/ or die "$proc: error with bernstein";
         $bsum += $1;
-        $1 > $bmax and $bmax = $1;
+        $1 > $bmax and $bmax = $1, $bn = $i;
         $q != $1 and $d{$q-$1}++;
       }
     if ($mode eq 'b')
@@ -108,11 +108,11 @@ elsif ($mode eq 'm' || $mode eq 'b')
         close WR;
         close RD;
         print "Bernstein:\n";
-        print "qmax = $bmax\n";
+        print "qmax = $bmax ($bn)\n";
         print "qav = $bsum / 2^", $n-2, " = ", $bsum/(1<<($n-2)), "\n\n";
         print "Patterns:\n";
       }
-    print "qmax = $pmax\n";
+    print "qmax = $pmax ($pn)\n";
     print "qav = $psum / 2^", $n-2, " = ", $psum/(1<<($n-2)), "\n";
     if (%d)
       {
