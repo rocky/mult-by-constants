@@ -127,15 +127,15 @@ void init_hash(void)
     node = hash_table[i];
     while (node)
     {
-      NODE *parent;
-      parent = node->parent;
+      NODE *next;
+      next = node->next;
       if (non-- == 0)
       {
         fprintf(stderr, "bernstein: internal error ('non' too low)!\n");
         exit(EXIT_INTERROR);
       }
       free(node);
-      node = parent;
+      node = next;
     }
     hash_table[i] = NULL;
   }
@@ -318,4 +318,4 @@ unsigned int emit_code(NODE *node)
 }
 
 
-/* $Id: bernstein.c 1.5 2000/11/22 17:23:31 lefevre Exp lefevre $ */
+/* $Id: bernstein.c 1.6 2000/11/23 11:22:16 lefevre Exp lefevre $ */
