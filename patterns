@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.10 2000/11/28 08:45:03 vlefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.11 2000/11/29 01:10:01 vlefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -204,6 +204,7 @@ EOF
 sub gsas
   {
     my @x = (&makeind($_[0]));
+    my %sign = ('PP' => '+', 'PN' => '-', 'NP' => '-', 'NN' => '+');
     while (@x)
       {
         $level > 2
@@ -211,18 +212,25 @@ sub gsas
         my %w;
         foreach (0 .. $#x)
           {
-            my %x1 = %{$x[$_]};
+            my ($s1,$d1) = @{$x[$_]}{'s','d'};
             my $key = $_;
             foreach ($_ .. $#x)
               {
-                my %x2 = %{$x[$_]};
+                my ($s2,$d2) = @{$x[$_]}{'s','d'};
                 my $same = $_ == $key;
                 $key .= ",$_";
-                foreach (&getdist($x1{'p'}, $x2{'p'}, $same, '+'),
-                         &getdist($x1{'p'}, $x2{'n'}, $same, '-'),
-                         &getdist($x1{'n'}, $x2{'p'}, $same, '-'),
-                         &getdist($x1{'n'}, $x2{'n'}, $same, '+'))
-                  { $w{"$key,$_"}++ }
+                my $i1;
+                foreach $i1 (@$d1)
+                  {
+                    my $b1 = substr($s1, -($i1+1), 1);
+                    my $i2;
+                    foreach $i2 (@$d2)
+                     {
+                       my $b2 = substr($s2, -($i2+1), 1);
+                       $w{"$key,".($i1-$i2).$sign{$b1.$b2}}++
+                         unless ($same && $i1 <= $i2);
+                     }
+                  }
               }
           }
         my @d = sort { $w{$a} <=> $w{$b} || $a <=> $b } keys %w;
@@ -236,7 +244,9 @@ sub gsas
         my $w = 0;
         while ($w{$d = pop @d} > $w)
           {
-            $i != $j and $w = $w{$d}, last;
+            my ($i1,$i2) = $d =~ /^(\d+),(\d+),/ or die;
+            $i1 != $i2 and $w = $w{$d}, last;
+
           }
 exit;
       }
@@ -245,17 +255,9 @@ exit;
 sub makeind
   { my $s = $_[0];
     $s =~ s/0*$//;
-    my $l = length($s) - 1;
-    my ($i,@n,@p);
-    for($i=0;$i<=$l;$i++)
-      { my $d = substr $s, $l-$i, 1;
-        $d eq 'P' and push @p, $i;
-        $d eq 'N' and push @n, $i; }
-    return { 's' => $s, 'p' => \@p, 'n' => \@n }; }
-
-sub getdist
-  { my ($x1,$x2,$same,$sign) = @_;
-    my ($i,$j,@r);
-    foreach $i (@$x1) { foreach $j (@$x2)
-      { push @r, ($i-$j).$sign unless ($same && $i <= $j) } }
-    return @r; }
+    my $l = length $s;
+    my ($i,@d);
+    for ($i = 0; $i < $l; $i++)
+      { push @d, $i unless (substr($s, -($i+1), 1) eq '0'); }
+    $level > 3 and print "\nmakeind: $s (@d).\n";
+    return { 's' => $s, 'd' => \@d }; }
