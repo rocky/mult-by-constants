@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.26 2003/06/11 17:10:52 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.27 2003/06/12 12:12:47 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -76,7 +76,7 @@ if ($mode eq 'a')
             $level > 1 and print "Booth recoding: $_.\n";
           }
         /^N/ and tr/NP/PN/;
-        /^(P|P0([NP]?0)*[NP])$/ or die $Usage;
+        s/^(P|P0([NP]?0)*[NP])0*$/$1/ or die $Usage;
         push @b, $_;
       }
     my $q = &$subsas(@b);
