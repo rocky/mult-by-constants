@@ -54,10 +54,11 @@ elsif ($mode eq 'm' || $mode eq 'b')
     if ($mode eq 'b')
       {
         use IPC::Open2;
+        open2(\*RD, \*WR, "./bernstein 0");
+        # Note: this program must make sure that it does not take too
+        # much memory when caching information about the constants!
       }
-    my $i0 = (1<<($n-1)) + 1;
-    my $mask = ($i0 - 2) & 0x3FE;
-    for ($i = $i0; $i < 1<<$n; $i += 2)
+    for ($i = (1<<($n-1))+1; $i < 1<<$n; $i += 2)
       {
         @sas = ();
         my $a = unpack 'B*', pack 'N', $i;
@@ -66,12 +67,6 @@ elsif ($mode eq 'm' || $mode eq 'b')
         $psum += $q;
         $q > $pmax and $pmax = $q;
         $mode eq 'm' and next;
-        unless ($i & $mask)
-          {
-            close WR if ($i > $i0);
-            close RD if ($i > $i0);
-            open2(\*RD, \*WR, "./bernstein 0");
-          }
         print WR "$i\n";
         <RD> =~ /^Cost\($i\) = (\d+)$/ or die "$proc: error with bernstein";
         $bsum += $1;
