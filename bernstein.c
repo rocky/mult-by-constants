@@ -61,7 +61,7 @@ static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
 typedef struct node {
   struct node *parent;  /* node used to generate the current node  */
   VALUE value;          /* value of the current node (odd integer) */
-  unsigned int cost;    /* cost of the value                       */
+  unsigned int cost;    /* cost of the value, or lower bound       */
   OP opcode;            /* operation                               */
   unsigned int shift;   /* shift count                             */
   struct node *next;    /* next node having the same hash code     */
@@ -196,7 +196,8 @@ NODE *get_node(VALUE n)
     if (node->value == n)
     {
 #ifdef PRUNE
-      if (node->opcode == INVALID) goto validate_node;
+      if (node->opcode == INVALID && node->cost <= limit)
+        goto validate_node;
 #endif
       return node;
     }
@@ -236,7 +237,10 @@ validate_node:
     VALUE d = 4, dsup;
     int shift = 2;
     dsup = n >> 1;
-
+#ifdef PRUNE
+    node->cost = limit + 1;  /* Lower bound on the cost in case the */
+                             /* following calls to try would fail.  */
+#endif
     while (d <= dsup)
     {
       if (n % (d - 1) == 0)
@@ -366,4 +370,4 @@ unsigned int emit_code(NODE *node)
 }
 
 
-/* $Id: bernstein.c 1.7 2000/11/23 11:26:38 lefevre Exp lefevre $ */
+/* $Id: bernstein.c 1.8 2000/11/27 15:06:40 lefevre Exp vlefevre $ */
