@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.13 2000/11/29 15:30:54 lefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.14 2000/11/29 21:27:19 vlefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -240,6 +240,7 @@ sub gsas
         my @d = sort { $w{$a} <=> $w{$b} || $a <=> $b } keys %w;
         if ($level > 3)
           { my $i = $#d;
+            print "Bounds:\n";
             do
               {
                 my $key = $d[$i];
@@ -248,9 +249,9 @@ sub gsas
               }
             while (--$i >= 0);
             print "Tries:\n"; }
-        my ($c,$k);
+        my $c;
         my $w = 0;
-        while ($w{$k = pop @d} > $w)
+        while ($w{my $k = pop @d} > $w)
           { my ($i1,$i2,$d) = $k =~ /^(\d+),(\d+),(\d+)/ or die;
             $i1 != $i2 and ($c,$w) = ($k,$w{$k}), last;
             my $v = $v{$k};
@@ -267,7 +268,16 @@ sub gsas
             my $x = @$v;
             $level > 3
               and printf "%3d, %3d, %3d  -> w = $x (@$v)\n", $i1, $i2, $d;
-            $x > $w and $w = $x, $c = $k; }
+            $x > $w and ($c,$w) = ($k,$x); }
+        $w > 1 or last;
+        my ($i1,$i2,$d,$o) = $c =~ /^(\d+),(\d+),(\d+)([-+])$/ or die;
+        my $v = $v{$c};
+        if ($level > 2)
+          {
+            print "Chosen:\n" if ($level > 3);
+            printf "%3d, %3d, %3d, $o, w = $w (@$v)\n", $i1, $i2, $d;
+          }
+
 exit;
       }
   }
