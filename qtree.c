@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.12 2001/02/26 10:46:01 lefevre Exp lefevre $
+ * $Id: qtree.c 1.13 2001/02/26 12:49:53 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
     int ca, cb;
 
 #ifdef LOWMEM
-    char *va, *vb;
+    unsigned char *va, *vb;
 #else
     long next;
 #endif
