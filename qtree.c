@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.13 2001/02/26 12:49:53 lefevre Exp lefevre $
+ * $Id: qtree.c 1.14 2001/02/26 13:25:15 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -84,7 +84,10 @@ static size_t setu0(char *t, char *z, unsigned char *v)
 
 static void setu(char *t, char *z, unsigned char **u)
 {
-  *u = malloc(setu0(t, z, NULL));
+  unsigned long s;
+  s = setu0(t, z, NULL);
+  printf("Memory requested: %lu bytes\n", s);
+  *u = malloc(s);
   if (*u == NULL)
   {
     fprintf(stderr, "qtree: out of memory!\n");
