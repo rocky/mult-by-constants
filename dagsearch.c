@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.5 2001/05/02 02:49:32 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.6 2001/05/02 02:51:28 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 #define QMAX 32
@@ -25,9 +26,15 @@ typedef unsigned long int VALUE;
 #define STRTOVALUE(S) strtoul(S, (char **) NULL, 0)
 #endif
 
+#ifdef NDEBUG
+#define OUT(...)
+#else
+#define OUT(...) printf(__VA_ARGS__)
+#endif
+
 #define DIST(x,y) ((x) >= (y) ? (x) - (y) : (y) - (x))
 
-void dagsearch(int q, int *dag, long mmax)
+void dagsearch(int q, int *dag, unsigned char *cost, long mrec, long mmax)
 {
   int i;
   int *o, *r, *s;
@@ -107,17 +114,23 @@ void dagsearch(int q, int *dag, long mmax)
           goto next;
       }
     }
-#ifndef NDEBUG
-    printf("%3d: %3" VALUEFMT "  ( %3" VALUEFMT " %3" VALUEFMT " )\n",
-           i, v[i], x[2*i], x[2*i+1]);
-#endif
+    OUT("%3d: %3" VALUEFMT "  ( %3" VALUEFMT " %3" VALUEFMT " )",
+        i, v[i], x[2*i], x[2*i+1]);
+    if (v[i] <= mrec && cost[v[i]] > i)
+    {
+      cost[v[i]] = i;
+      OUT("   -   Cost(%3" VALUEFMT ") = %d", v[i], i);
+    }
+    OUT("\n");
   }
 }
 
 int main(int argc, char **argv)
 {
-  VALUE mrec, mmax;
+  VALUE mrec, mmax, v;
   unsigned long line = 0;
+  unsigned char *cost;
+  FILE *f;
 
   if (argc != 4)
   {
@@ -148,6 +161,14 @@ int main(int argc, char **argv)
     fprintf(stderr, "dagsearch: mmax must be greater or equal to mrec\n");
     exit(4);
   }
+
+  cost = malloc(mrec+1);
+  if (cost == NULL)
+  {
+    fprintf(stderr, "dagsearch: out of memory!\n");
+    exit(10);
+  }
+  memset(cost, -1, mrec+1);
 
   while (1)
   {
@@ -182,7 +203,38 @@ int main(int argc, char **argv)
       exit(8);
     }
 
-    dagsearch(q, dag, mmax);
+    dagsearch(q, dag, cost, mrec, mmax);
+  }
+
+  cost[0] = 0;
+  cost[1] = 0;
+  for (v = 1; v < mrec; v += 2)
+  {
+    VALUE w;
+    int c;
+
+    c = cost[v];
+    w = v;
+    while ((w <<= 1) <= mrec)
+      if (cost[w] > c)
+        cost[w] = c;
+  }
+
+  f = fopen(argv[3], "wb");
+  if (f == NULL)
+  {
+    fprintf(stderr, "dagsearch: cannot create file\n");
+    exit(11);
+  }
+  if (fwrite(cost, mrec+1, 1, f) != 1)
+  {
+    fprintf(stderr, "dagsearch: cannot write to file\n");
+    exit(12);
+  }
+  if (fclose(f))
+  {
+    fprintf(stderr, "dagsearch: cannot close file\n");
+    exit(13);
   }
 
   return 0;
