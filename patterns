@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.4 2000/11/21 16:06:11 lefevre Exp $';
+my $RCSID = '$Id: patterns 1.5 2000/11/22 01:15:18 vlefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -12,6 +12,10 @@ Mode a:
   Arg1... odd binary number.
   Arg2... output level (optional).
   Out.... SAS-chain.
+
+Mode b:
+  Arg1... number of digits (> 1).
+  Out.... comparisons with Bernstein's algorithm.
 
 Mode m:
   Arg1... number of digits (> 1).
@@ -40,24 +44,43 @@ if ($mode eq 'a')
     print "Cost($a) = ", scalar(@sas), "\n";
     $level and print @sas;
   }
-elsif ($mode eq 'm')
+elsif ($mode eq 'm' || $mode eq 'b')
   {
     my ($i,$n);
 
     ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
-    my $qmax = 0;
-    my $qsum = 0;
+    my ($pmax,$psum) = (0,0);
+    my ($bmax,$bsum) = (0,0);
+    if ($mode eq 'b')
+      {
+        use IPC::Open2;
+        open2(\*RD, \*WR, "./bernstein 0");
+      }
     for ($i = (1<<($n-1))+1; $i < 1<<$n; $i += 2)
       {
         @sas = ();
         my $a = unpack 'B*', pack 'N', $i;
         $a =~ s/^0*//;
         my $q = &recsas(&booth($a));
-        $qsum += $q;
-        $q > $qmax and $qmax = $q;
+        $psum += $q;
+        $q > $pmax and $pmax = $q;
+        $mode eq 'm' and next;
+        print WR "$i\n";
+        <RD> =~ /^Cost\($i\) = (\d+)$/ or die "$proc: error with bernstein";
+        $bsum += $1;
+        $1 > $bmax and $bmax = $1;
       }
-    print "qmax = $qmax\n";
-    print "qav = $qsum / 2^", $n-2, " = ", $qsum/(1<<($n-2)), "\n";
+    if ($mode eq 'b')
+      {
+        close WR;
+        close RD;
+        print "Bernstein:\n";
+        print "qmax = $bmax\n";
+        print "qav = $bsum / 2^", $n-2, " = ", $bsum/(1<<($n-2)), "\n\n";
+        print "Patterns:\n";
+      }
+    print "qmax = $pmax\n";
+    print "qav = $psum / 2^", $n-2, " = ", $psum/(1<<($n-2)), "\n";
   }
 elsif ($mode eq 'w')
   {
