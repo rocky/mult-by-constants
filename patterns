@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.3 2000/11/21 16:01:04 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.4 2000/11/21 16:06:11 lefevre Exp $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -12,6 +12,10 @@ Mode a:
   Arg1... odd binary number.
   Arg2... output level (optional).
   Out.... SAS-chain.
+
+Mode m:
+  Arg1... number of digits (> 1).
+  Out.... maximum and average number of operations.
 
 Mode w:
   Arg1... number of digits (> 1).
@@ -35,6 +39,25 @@ if ($mode eq 'a')
     $level > 1 and print "\n";
     print "Cost($a) = ", scalar(@sas), "\n";
     $level and print @sas;
+  }
+elsif ($mode eq 'm')
+  {
+    my ($i,$n);
+
+    ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
+    my $qmax = 0;
+    my $qsum = 0;
+    for ($i = (1<<($n-1))+1; $i < 1<<$n; $i += 2)
+      {
+        @sas = ();
+        my $a = unpack 'B*', pack 'N', $i;
+        $a =~ s/^0*//;
+        my $q = &recsas(&booth($a));
+        $qsum += $q;
+        $q > $qmax and $qmax = $q;
+      }
+    print "qmax = $qmax\n";
+    print "qav = $qsum / 2^", $n-2, " = ", $qsum/(1<<($n-2)), "\n";
   }
 elsif ($mode eq 'w')
   {
