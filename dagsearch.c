@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.12 2002/12/19 13:54:02 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.13 2002/12/28 03:03:37 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <cost> [ <cinf> <csup> <code> ]
  *   mrec: maximum recorded value
@@ -310,7 +310,7 @@ int main(int argc, char **argv)
                       line);
               exit(6);
             }
-          if (scanf("(%7[(),0-9])", buffer) != 1 ||
+          if (scanf("(%7[,0-9])", buffer) != 1 ||
               sscanf(buffer, "%d,%d", dag+2*q, dag+2*q+1) != 2)
             {
               fprintf(stderr, "dagsearch: input error at line %u\n", line);
