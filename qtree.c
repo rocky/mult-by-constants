@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.5 2001/02/01 10:47:03 lefevre Exp lefevre $
+ * $Id: qtree.c 1.6 2001/02/01 12:56:33 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -205,6 +205,7 @@ int main(int argc, char **argv)
     t[next].next = -1;
 #endif
     printf("Nmin(%d) = %ld\n", c, nmin);
+    fflush(stdout);
   }
 
   if (argc == 3)
