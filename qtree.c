@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.4 2001/01/21 01:28:58 lefevre Exp lefevre $
+ * $Id: qtree.c 1.5 2001/02/01 10:47:03 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -13,6 +13,7 @@
  *   -DPARENTS   save the parents a and b in the structure (not useful
  *               for the moment)
  *   -DRESULTS   write information to stdout each time a value is found
+ *   -DSORT      sort the linked lists (should be faster)
  *
  * Usage: qtree <m> [<dest_file>]
  *   m: value of m (decimal number)
@@ -31,11 +32,18 @@
 #define ADDPARENTS(A, B)
 #endif
 
+#ifdef SORT
+#define ADDNEXT
+#else
+#define ADDNEXT \
+  t[n].next = next; \
+  next = n;
+#endif
+
 #define VALID(A, B) do { \
   t[n].cost = c; \
   ADDPARENTS(A, B) \
-  t[n].next = next; \
-  next = n; \
+  ADDNEXT \
   if (n < nmin) nmin = n; \
   r--; \
   } while (0) \
@@ -124,10 +132,14 @@ int main(int argc, char **argv)
   {
     /* find all the positive integers n such that f_m(n) = c */
 
-    long next = -1;
+    long next;
     long nmin = LONG_MAX;
     long a, b;
     int ca, cb;
+
+#ifndef SORT
+    next = -1;
+#endif
 
     for (ca = 0, cb = c - 1 - ca; cb >= ca; ca++, cb--)
       for (a = first[ca]; a >= 0; a = t[a].next)
@@ -163,7 +175,12 @@ int main(int argc, char **argv)
           }
         }
 
+#ifdef SORT
+    for (b = 3; b <= m; b++)
+      if (t[b].cost == c && (b & 1 || t[b>>1].cost != c))
+#else
     for (b = next; b >= 0; b = t[b].next)
+#endif
     {
       unsigned long n;
       for (n = b, a = 2; (n <<= 1) <= m; a <<= 1)
@@ -174,7 +191,19 @@ int main(int argc, char **argv)
         }
     }
 
+#ifdef SORT
+    next = nmin;
+#endif
     first[c] = next;
+#ifdef SORT
+    for (b = next; b <= m; b++)
+      if (t[b].cost == c)
+      {
+        t[next].next = b;
+        next = b;
+      }
+    t[next].next = -1;
+#endif
     printf("Nmin(%d) = %ld\n", c, nmin);
   }
 
