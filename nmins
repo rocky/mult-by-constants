@@ -14,5 +14,6 @@ q	Bernstein	Pattern s	Patterns g	Patterns h	Inequalities
 5	1867		1703		1703		2923		7339
 6	10453		13623		13623		44179		175901
 7	87971		174771		174903		374103		11199517
+8	543413		1398167		1420471
 
-$Id$
+$Id: nmins 1.1 2001/02/06 15:34:08 lefevre Exp lefevre $
