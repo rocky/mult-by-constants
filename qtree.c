@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.2 2001/01/18 15:48:24 lefevre Exp lefevre $
+ * $Id: qtree.c 1.3 2001/01/18 16:41:45 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -64,9 +64,9 @@ int main(int argc, char **argv)
   CELL *t;
   long *first;
 
-  if (argc != 2)
+  if (argc != 2 && argc != 3)
   {
-    fprintf(stderr, "Usage: qtree <m>\n");
+    fprintf(stderr, "Usage: qtree <m> [<dest_file>]\n");
     exit(1);
   }
 
@@ -167,6 +167,36 @@ int main(int argc, char **argv)
 
     first[c] = next;
     printf("Nmin(%d) = %ld\n", c, nmin);
+  }
+
+  if (argc == 3)
+  {
+    FILE *f;
+
+    f = fopen(argv[2], "wb");
+    if (f == NULL)
+    {
+      fprintf(stderr, "qtree: cannot create file!\n");
+      exit(6);
+    }
+    for (i = 0; i <= m; i++)
+    {
+      if (t[i].cost > 255)
+      {
+        fprintf(stderr, "qtree: cost too high!\n");
+        exit(7);
+      }
+      if (putc(t[i].cost, f) < 0)
+      {
+        fprintf(stderr, "qtree: cannot write to file!\n");
+        exit(8);
+      }
+    }
+    if (fclose(f))
+    {
+      fprintf(stderr, "qtree: cannot close file!\n");
+      exit(9);
+    }
   }
 
   return 0;
