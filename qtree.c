@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.11 2001/02/02 14:34:02 lefevre Exp lefevre $
+ * $Id: qtree.c 1.12 2001/02/26 10:46:01 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "qtree: out of memory!\n");
     exit(6);
   }
-  setu((char *) t, (char *) t + m, u);
+  setu(t, t + m, u);
 #endif
 
   for (c = 1; r && (cmax < 0 || c <= cmax); c++)
@@ -339,7 +339,7 @@ int main(int argc, char **argv)
     first[c] = nmin;
 
 #ifdef LOWMEM
-    setu((char *) t + nmin, (char *) t + m, u + c);
+    setu(t + nmin, t + m, u + c);
 #else
     next = nmin;
     for (b = next; b <= m; b++)
