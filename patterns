@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.15 2000/11/29 23:08:16 vlefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.16 2000/11/30 01:20:18 vlefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -20,6 +20,12 @@ Mode b:
 Mode m:
   Arg1... number of digits (> 1).
   Out.... maximum and average number of operations.
+
+Mode r:
+  Arg1... number of digits (> 1).
+  Arg2... number of tested constants (0 to test the rand function).
+  Arg3... seed (for rand) -- optional.
+  Out.... average number of operations on random values.
 
 Mode w:
   Arg1... number of digits (> 1).
@@ -123,6 +129,31 @@ elsif ($mode eq 'w')
     print "qmax = $qmax\n";
     foreach (@w)
       { print "$_\n" }
+  }
+elsif ($mode eq 'r')
+  {
+    my ($n,$p,$seed) = @ARGV;
+    $n =~ /^\d+$/ && $n > 1 && $p =~ /^\d+$/ or die $Usage;
+    srand $seed;
+    if ($p)
+      {
+        my $qmax = 0;
+        my $t = 0;
+        for (my $i = 0; $i < $p; $i++)
+          { @sas = ();
+            my $q = &$subsas(&booth(&getrand($n)));
+            $q > $qmax and $qmax = $q;
+            $t += $q; }
+        $t /= $p;
+        print <<EOF;
+Number of digits:		$n
+Number of tested constants:	$p
+Largest number of operations:	$qmax
+Average number of operations:	$t
+EOF
+      }
+    else
+      { print &getrand($n), "\n"; }
   }
 else
   { die $Usage; }
@@ -324,3 +355,10 @@ sub clear
       { substr($href->{'s'}, -($_+$d+1), 1) = '0'; }
     $href->{'s'} =~ s/^0*(.*?)0*$/$1/;
     return $1; }
+
+sub getrand
+  { my $n = $_[0] - 2;
+    my $r = '1';
+    while ($n--)
+      { $r .= int rand 2 }
+    return $r.'1'; }
