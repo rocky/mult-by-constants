@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: qtree.c 1.1 2001/01/18 15:21:00 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -13,6 +13,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+
+#define VALID(A, B) do { \
+  t[n].cost = c; \
+  t[n].a = (A); \
+  t[n].b = (B); \
+  t[n].next = next; \
+  next = n; \
+  if (n < nmin) nmin = n; \
+  r--; \
+  } while (0) \
 
 #ifdef RESULTS
 
@@ -97,6 +107,7 @@ int main(int argc, char **argv)
     /* find all the positive integers n such that f_m(n) = c */
 
     long next = -1;
+    long nmin = LONG_MAX;
     long a, b;
     int ca, cb;
 
@@ -110,24 +121,14 @@ int main(int argc, char **argv)
           if (n <= m && t[n].cost < 0)
           {
             EMIT(a, b, n, c, '+');
-            t[n].cost = c;
-            t[n].a = a;
-            t[n].b = b;
-            t[n].next = next;
-            next = n;
-            r--;
+            VALID(a, b);
           }
 
           n = abs(a-b);
           if (n <= m && t[n].cost < 0)
           {
             EMIT(a, b, n, c, '-');
-            t[n].cost = c;
-            t[n].a = a;
-            t[n].b = -b;
-            t[n].next = next;
-            next = n;
-            r--;
+            VALID(a, -b);
           }
         }
 
@@ -140,12 +141,7 @@ int main(int argc, char **argv)
           if (n <= m && t[n].cost < 0)
           {
             EMIT(a, b, (long) n, c, '*');
-            t[n].cost = c;
-            t[n].a = -a;
-            t[n].b = b;
-            t[n].next = next;
-            next = n;
-            r--;
+            VALID(-a, b);
           }
         }
 
@@ -156,16 +152,12 @@ int main(int argc, char **argv)
         if (t[n].cost < 0)
         {
           EMIT(a, b, n, c, '*');
-          t[n].cost = c;
-          t[n].a = -a;
-          t[n].b = b;
-          t[n].next = next;
-          next = n;
-          r--;
+          VALID(-a, b);
         }
     }
 
     first[c] = next;
+    printf("Nmin(%d) = %ld\n", c, nmin);
   }
 
   return 0;
