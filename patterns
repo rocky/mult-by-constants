@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.2 2000/02/28 18:24:42 vlefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.3 2000/11/21 16:01:04 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -30,10 +30,11 @@ if ($mode eq 'a')
     ($a = shift) =~ /^[01]*1[01]*$/ or die $Usage;
     $level = shift;
     $b = &booth($a);
-    $level and print "Booth recoding: $b.\n";
+    $level > 1 and print "Booth recoding: $b.\n";
     &recsas($b);
-    $level and print "\n";
-    print @sas;
+    $level > 1 and print "\n";
+    print "Cost($a) = ", scalar(@sas), "\n";
+    $level and print @sas;
   }
 elsif ($mode eq 'w')
   {
@@ -78,12 +79,12 @@ sub recsas
       { my $d = substr $s, $l-$i, 1;
         $d eq 'P' and push @p, $i;
         $d eq 'N' and push @n, $i; }
-    print "\nrecsas: $s.\n  P: @p\n  N: @n\n" if ($level > 1);
+    print "\nrecsas: $s.\n  P: @p\n  N: @n\n" if ($level > 2);
     foreach $i (1..$#p) { foreach $j (0..$i-1) { $w{$p[$i]-$p[$j]}++ } }
     foreach $i (1..$#n) { foreach $j (0..$i-1) { $w{$n[$i]-$n[$j]}++ } }
     foreach $i (0..$#p) { foreach $j (0..$#n) { $w{-abs($p[$i]-$n[$j])}++ } }
     my @d = sort { $w{$a} <=> $w{$b} || $a <=> $b } keys %w;
-    if ($level > 2)
+    if ($level > 3)
       { my $i = $#d;
         do
           { printf "%3d, w = %d\n", $d[$i], $w{$d[$i]} }
@@ -111,7 +112,7 @@ sub recsas
     $u =~ tr/pnPN/PN00/;
     $f = $c < 0 and $c = -$c;
     $g = $u =~ /^0*N/ and $u =~ tr/PN/NP/;
-    print <<EOF if ($level > 1);
+    print <<EOF if ($level > 2);
     t = $t
     u = $u
   --> t $sign[$g] (u << $c $sign[$f] u)
