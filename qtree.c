@@ -1,5 +1,5 @@
 /*
- * $Id: qtree.c 1.3 2001/01/18 16:41:45 lefevre Exp lefevre $
+ * $Id: qtree.c 1.4 2001/01/21 01:28:58 lefevre Exp lefevre $
  *
  * Calculate f_m(n): [[-m,+m]] -> N such that
  *   1) f_m(n) = 0 for n in E = {0, +2^k, -2^k}, k integer
@@ -8,6 +8,15 @@
  *   4) for each n not in E, there exist a and b such that
  *        _ n = a+b and (2) is an equality, or
  *        _ n = ab with |a| > 1 and |b| > 1, and (3) is an equality.
+ *
+ * Compile options:
+ *   -DPARENTS   save the parents a and b in the structure (not useful
+ *               for the moment)
+ *   -DRESULTS   write information to stdout each time a value is found
+ *
+ * Usage: qtree <m> [<dest_file>]
+ *   m: value of m (decimal number)
+ *   dest_file: if present, file where the values of f_m are stored
  */
 
 #include <stdio.h>
