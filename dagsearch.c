@@ -1,5 +1,5 @@
 /*
- * $Id: dagsearch.c 1.3 2001/04/30 04:15:25 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.4 2001/04/30 08:53:40 lefevre Exp lefevre $
  *
  * Usage: dagsearch <mrec> <mmax> <file>
  *   mrec: maximum recorded value
@@ -15,19 +15,29 @@
 
 #define QMAX 32
 
+#ifdef LONGLONG
+typedef unsigned long long int VALUE;
+#define VALUEFMT "llu"
+#define STRTOVALUE(S) strtoull(S, (char **) NULL, 0)
+#else
+typedef unsigned long int VALUE;
+#define VALUEFMT "lu"
+#define STRTOVALUE(S) strtoul(S, (char **) NULL, 0)
+#endif
+
 #define DIST(x,y) ((x) >= (y) ? (x) - (y) : (y) - (x))
 
 void dagsearch(int q, int *dag, long mmax)
 {
   int i;
   int *o, *r, *s;
-  long *x;
+  VALUE *x;
   int op[QMAX];  /* 0: add; 1: sub */
   int rs[QMAX];  /* 0: shift on the 1st value,
                     1: shift on the 2nd value */
   int sh[QMAX];  /* shift count */
-  long v[QMAX+1];  /* values */
-  long vp[2*QMAX];
+  VALUE v[QMAX+1];  /* values */
+  VALUE vp[2*QMAX];
 
   printf("DAG [ ");
   for (i = 0; i < q; i++)
@@ -84,15 +94,28 @@ void dagsearch(int q, int *dag, long mmax)
     }
     if (v[i] == 0)
       goto next;
+    {
+      int j;
+      for (j = 0; j < i; j++)
+      {
+        VALUE x;
+        x = v[j];
+        while (x < v[i])
+          x <<= 1;
+        if (x == v[i])
+          goto next;
+      }
+    }
 #ifndef NDEBUG
-    printf("%3d: %3ld  ( %3ld %3ld )\n", i, v[i], x[2*i], x[2*i+1]);
+    printf("%3d: %3" VALUEFMT "  ( %3" VALUEFMT " %3" VALUEFMT " )\n",
+           i, v[i], x[2*i], x[2*i+1]);
 #endif
   }
 }
 
 int main(int argc, char **argv)
 {
-  long mrec, mmax;
+  VALUE mrec, mmax;
   unsigned long line = 0;
 
   if (argc != 4)
@@ -101,28 +124,28 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  mrec = strtol(argv[1], (char **) NULL, 0);
-  if (mrec < 1)
-  {
-    fprintf(stderr, "dagsearch: mrec must be at least 1\n");
-    exit(2);
-  }
+  mrec = STRTOVALUE(argv[1]);
   if (errno == ERANGE)
   {
     fprintf(stderr, "dagsearch: mrec is too large (out of range)\n");
     exit(3);
   }
-
-  mmax = strtol(argv[2], (char **) NULL, 0);
-  if (mmax < mrec)
+  if (mrec < 1)
   {
-    fprintf(stderr, "dagsearch: mmax must be greater or equal to mrec\n");
-    exit(4);
+    fprintf(stderr, "dagsearch: mrec must be at least 1\n");
+    exit(2);
   }
+
+  mmax = STRTOVALUE(argv[2]);
   if (errno == ERANGE)
   {
     fprintf(stderr, "dagsearch: mmax is too large (out of range)\n");
     exit(5);
+  }
+  if (mmax < mrec)
+  {
+    fprintf(stderr, "dagsearch: mmax must be greater or equal to mrec\n");
+    exit(4);
   }
 
   while (1)
