@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.16 2000/11/30 01:20:18 vlefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.17 2000/11/30 10:45:02 vlefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -33,6 +33,7 @@ Mode w:
 
 Algo s: simple algorithm (as described in the thesis)
 Algo g: global algorithm (common subpatterns)
+Algo h: like algo g, but all equivalent Booth codes are tested
 EOF
 
 @ARGV > 1 or die $Usage;
@@ -47,6 +48,8 @@ if ($algo eq 's')
   { $subsas = \&recsas; }
 elsif ($algo eq 'g')
   { $subsas = \&gsas; }
+elsif ($algo eq 'h')
+  { $subsas = \&hsas; }
 else
   { die $Usage; }
 
@@ -362,3 +365,30 @@ sub getrand
     while ($n--)
       { $r .= int rand 2 }
     return $r.'1'; }
+
+sub hsas
+  { my @t = @_;
+    my %h;
+    foreach (@t)
+      { $h{$_} = 1; }
+    my $oldlevel = $level;
+    my $qopt = length $_[0];
+    my $bopt;
+    while ($b = pop @t)
+      { my $i = -1;
+        while (($i = index $b, 'P0N', $i + 1) >= 0)
+          { my $c = $b;
+            substr($c, $i, 3) = '0PP';
+            $h{$c}++ or push @t, $c; }
+        while (($i = index $b, 'N0P', $i + 1) >= 0)
+          { my $c = $b;
+            substr($c, $i, 3) = '0NN';
+            $h{$c}++ or push @t, $c; }
+        @sas = ();
+        $level = 0;
+        my $q = &gsas($b);
+        $level = $oldlevel;
+        $level > 1 and print "$b: cost = $q\n";
+        $q < $qopt and $qopt = $q, $bopt = $b; }
+    $level and print "Optimal cost for $bopt.\n";
+    return $qopt; }
