@@ -1,5 +1,5 @@
 /*
- * $Id: gendags.c 1.3 2002/12/12 09:24:05 lefevre Exp lefevre $
+ * $Id: gendags.c 1.4 2002/12/12 09:47:39 lefevre Exp lefevre $
  *
  * In order to find the possible results (in an interval) that can be
  * obtained with q shift-and-add operations, this program generates a
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
   dag = calloc(2*q, sizeof(int));
   if (dag == NULL)
     {
-      fprintf(stderr, "sdags: out of memory!\n");
+      fprintf(stderr, "gendags: out of memory!\n");
       exit(5);
     }
 
