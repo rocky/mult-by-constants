@@ -1,12 +1,15 @@
 /*
- * $Id: dagsearch.c 1.9 2001/05/04 08:04:11 lefevre Exp lefevre $
+ * $Id: dagsearch.c 1.10 2002/12/12 09:17:09 lefevre Exp lefevre $
  *
- * Usage: dagsearch <mrec> <mmax> <file>
+ * Usage: dagsearch <mrec> <mmax> <cost> [ <cinf> <csup> ]
  *   mrec: maximum recorded value
  *   mmax: maximum considered value in the search
- *   file: file where the values are saved
+ *   cost: file where the costs are saved
+ *   cinf: file where the cinf values are saved
+ *   csup: file where the csup values are saved
  *   standard input: list of DAGs (e.g. given by gendags)
  *
+ * Define SHIFTS to compute cinf and csup.
  */
 
 #include <stdio.h>
@@ -34,7 +37,11 @@ typedef unsigned long int VALUE;
 
 #define DIST(x,y) ((x) >= (y) ? (x) - (y) : (y) - (x))
 
-void dagsearch(int q, int *dag, unsigned char *cost, long mrec, long mmax)
+void dagsearch(int q, int *dag, unsigned char *cost,
+#ifdef SHIFTS
+               unsigned char *cinf, unsigned char *csup,
+#endif
+               long mrec, long mmax)
 {
   int i;
   int *o, *r, *s;
@@ -117,12 +124,62 @@ void dagsearch(int q, int *dag, unsigned char *cost, long mrec, long mmax)
         }
       OUT("%3d: %3" VALUEFMT "  ( %3" VALUEFMT " %3" VALUEFMT " )",
           i, v[i], x[2*i], x[2*i+1]);
-      if (v[i] <= mrec && cost[v[i]] > i)
+      if (v[i] <= mrec)
         {
-          cost[v[i]] = i;
-          OUT("   -   Cost(%3" VALUEFMT ") = %d", v[i], i);
+          if (cost[v[i]] > i)
+            {
+              cost[v[i]] = i;
+              OUT("   -   Cost(%3" VALUEFMT ") = %d", v[i], i);
+#ifdef SHIFTS
+              {
+                unsigned int cmax = 0;
+                int j;
+                for (j = 0; j < i; j++)
+                  if (sh[j] > cmax)
+                    cmax = sh[j];
+                cinf[v[i]] = cmax;
+                csup[v[i]] = cmax;
+              }
+#endif
+            }
+#ifdef SHIFTS
+          if (cost[v[i]] == i)
+            {
+              unsigned int cmax = 0;
+              int j;
+              for (j = 0; j < i; j++)
+                if (sh[j] > cmax)
+                  cmax = sh[j];
+              if (cinf[v[i]] > cmax)
+                cinf[v[i]] = cmax;
+              if (csup[v[i]] < cmax)
+                csup[v[i]] = cmax;
+            }
+#endif
         }
       OUT("\n");
+    }
+}
+
+void save(unsigned char *array, VALUE size, char *filename)
+{
+  FILE *f;
+
+  f = fopen(filename, "wb");
+  if (f == NULL)
+    {
+      fprintf(stderr, "dagsearch: cannot create file %s\n", filename);
+      exit(11);
+    }
+  if (fwrite(array, size, 1, f) != 1)
+    {
+      fprintf(stderr, "dagsearch: cannot write to file %s\n", filename);
+      exit(12);
+    }
+  if (fclose(f))
+    {
+      fprintf(stderr, "dagsearch: cannot close file %s\n", filename);
+      exit(13);
     }
 }
 
@@ -131,12 +188,24 @@ int main(int argc, char **argv)
   VALUE mrec, mmax;
   unsigned long line = 0;
   unsigned char *cost;
+#ifdef SHIFTS
+  unsigned char *cinf, *csup;
+#endif
 
+#ifndef SHIFTS
   if (argc != 4)
     {
       fprintf(stderr, "Usage: dagsearch <mrec> <mmax> <file>\n");
       exit(1);
     }
+#else
+  if (argc != 6)
+    {
+      fprintf(stderr,
+              "Usage: dagsearch <mrec> <mmax> <cost> <cinf> <csup>\n");
+      exit(1);
+    }
+#endif
 
   mrec = STRTOVALUE(argv[1]);
   if (errno == ERANGE)
@@ -172,13 +241,24 @@ int main(int argc, char **argv)
   cost[0] = 0;
   cost[1] = 0;
 
+#ifdef SHIFTS
+  cinf = malloc(mrec+1);
+  csup = malloc(mrec+1);
+  if (cinf == NULL || csup == NULL)
+    {
+      fprintf(stderr, "dagsearch: out of memory!\n");
+      exit(10);
+    }
+  cinf[0] = csup[0] = 0;
+  cinf[1] = csup[1] = 0;
+#endif
+
   while (1)
     {
       VALUE v;
       int q;
       int dag[2*QMAX];
       char buffer[8];
-      FILE *f;
 
       line++;
       for (q = 0; scanf("%1[\n]", buffer) == 0; q++)
@@ -206,7 +286,11 @@ int main(int argc, char **argv)
           exit(8);
         }
 
-      dagsearch(q, dag, cost, mrec, mmax);
+      dagsearch(q, dag, cost,
+#ifdef SHIFTS
+                cinf, csup,
+#endif
+                mrec, mmax);
 
       for (v = 1; v < mrec; v += 2)
         {
@@ -217,24 +301,18 @@ int main(int argc, char **argv)
           w = v;
           while ((w <<= 1) <= mrec)
             if (cost[w] > c)
-              cost[w] = c;
+              {
+                cost[w] = c;
+#ifdef SHIFTS
+                cinf[w] = csup[w] = 0;
+#endif
+              }
         }
 
-      f = fopen(argv[3], "wb");
-      if (f == NULL)
-        {
-          fprintf(stderr, "dagsearch: cannot create file %s\n", argv[3]);
-          exit(11);
-        }
-      if (fwrite(cost, mrec+1, 1, f) != 1)
-        {
-          fprintf(stderr, "dagsearch: cannot write to file %s\n", argv[3]);
-          exit(12);
-        }
-      if (fclose(f))
-        {
-          fprintf(stderr, "dagsearch: cannot close file %s\n", argv[3]);
-          exit(13);
-        }
+      save(cost, mrec+1, argv[3]);
+#ifdef SHIFTS
+      save(cinf, mrec+1, argv[4]);
+      save(csup, mrec+1, argv[5]);
+#endif
     }
 }
