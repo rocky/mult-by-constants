@@ -1,21 +1,39 @@
 /*
- * $Id: gendags.c 1.4 2002/12/12 09:47:39 lefevre Exp lefevre $
+ * $Id: gendags.c 1.5 2002/12/31 19:03:52 lefevre Exp lefevre $
  *
  * In order to find the possible results (in an interval) that can be
  * obtained with q shift-and-add operations, this program generates a
  * superset S(q) of the DAGs satisfying:
- *   * The DAG has q+1 nodes, the node 0 being called the source
- *     node, and the node q being called the target node.
+ *   * The DAG has q+1 nodes, denoted from 0 to q, the node 0 being called
+ *     the source node, and the node q being called the target node.
  *   * Each node has one or two parents, except the source node,
  *     which has no parents.
- *   * From each node, there exists a path leading to the target
- *     node (i.e., there are no useless nodes).
+ *   * From each node, there exists a path leading to the target node
+ *     (i.e., there are no useless nodes): each node except the target
+ *     node has at least one child.
+ *
+ * A node different from the source node will be represented by a pair of
+ * integers (x,y) such that x >= y, where x and y are the parents (x = y
+ * if there is only one parent). Since we seek to return DAGs up to an
+ * isomorphism, nodes will be ordered in such a way that between nodes
+ * (x,y) and (x',y'), the smaller one in the lexicographic order will
+ * come first. Moreover a simple isomorphism search will be performed;
+ * for instance, in each example, only the first DAG will be returned:
+ *   * Example 1:
+ *     (0,0) (0,0) (1,0) (3,2)
+ *     (0,0) (0,0) (2,0) (3,1)
+ *   * Example 2:
+ *     (0,0) (0,0) (2,1) (3,1)
+ *     (0,0) (0,0) (2,1) (3,2)
+ *   * Example 3:
+ *     (0,0) (0,0) (1,1) (3,2)
+ *     (0,0) (0,0) (2,2) (3,1)
  *
  * Usage: gendags <level> <q>
  *   q: number of nodes + 1 (= number of elementary operations)
  *   level:
  *     0 -> pairs must be ordered.
- *     1 -> level 0 + simple isomorphism search
+ *     1 -> level 0 + simple isomorphism search.
  *   e.g.
  *     $ diff <(./gendags 0 4) <(./gendags 1 4)
  *     3d2
@@ -92,7 +110,7 @@ int main(int argc, char **argv)
               assert(odd(i) && dag[i] <= dag[i-1]);
               if (dag[i] != dag[i-1])
                 {
-                  y = ++dag[i];
+                  y = dag[i] + 1;
                   x = dag[--i];
                   goto inc_ok;
                 }
@@ -100,7 +118,7 @@ int main(int argc, char **argv)
               assert(even(i) && dag[i] <= i/2);
               if (dag[i] != i/2)
                 {
-                  x = ++dag[i];
+                  x = dag[i] + 1;
                   y = 0;
                   goto inc_ok;
                 }
