@@ -214,6 +214,7 @@ void bernstein(VALUE n)
   printf("Cost(%" VALUEFMT ") = %u\n", n, node->cost);
   if (mode)
     emit_code(node);
+  fflush(stdout);
 }
 
 unsigned int emit_code(NODE *node)
@@ -243,4 +244,4 @@ unsigned int emit_code(NODE *node)
 }
 
 
-/* $Id: bernstein.c 1.2 2000/11/21 15:18:21 lefevre Exp lefevre $ */
+/* $Id: bernstein.c 1.3 2000/11/21 15:45:51 lefevre Exp vlefevre $ */
