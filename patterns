@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl
 
-$RCSID = '$Id$';
+$RCSID = '$Id: patterns 1.1 2000/02/28 17:56:46 vlefevre Exp vlefevre $';
 
 ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
@@ -11,31 +11,59 @@ Mode a:
   Arg1... odd binary number.
   Arg2... output level (optional).
   Out.... SAS-chain.
+
+Mode w:
+  Arg1... number of digits (> 1).
+  Out.... worst cases.
 EOF
 
 @ARGV > 1 or die $Usage;
 $mode = shift;
+@sign = ('+','-');
 
 if ($mode eq 'a')
   {
-    ($a = "00$ARGV[0]") =~ /^[01]+1$/ or die $Usage;
-    $level = $ARGV[1];
-
-    while ($a =~ /^(.*?)(0*)0(1*)1$/o)
-      { length $3 or ($a,$b) = ($1,$2.'0P'.$b), next;
-        my $z = ('0' x length $3).'N'.$b;
-        ($a,$b) = length $2 ? ($1,$2.'P'.$z) : ($1.'1',$z); }
-
-    $b =~ s/^0*//;
+    my ($a,$b);
+    ($a = shift) =~ /^[01]*1[01]*$/ or die $Usage;
+    $level = shift;
+    $b = &booth($a);
     $level and print "Booth recoding: $b.\n";
-
-    @sign = ('+','-');
     &recsas($b);
     $level and print "\n";
     print @sas;
   }
+elsif ($mode eq 'w')
+  {
+    my ($i,$n);
+
+    ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
+    my $qmax = 0;
+    for ($i = (1<<($n-1))+1; $i < 1<<$n; $i += 2)
+      {
+        @sas = ();
+        my $a = unpack 'B*', pack 'N', $i;
+        $a =~ s/^0*//;
+        my $q = &recsas(&booth($a));
+        $q == $qmax && @w < 32 and push @w, $a;
+        $q > $qmax or next;
+        $qmax = $q;
+        @w = ($a);
+      }
+    print "qmax = $qmax\n";
+    foreach (@w)
+      { print "$_\n" }
+  }
 else
   { die $Usage; }
+
+sub booth
+  { my ($a,$b) = ("00$_[0]","");
+    while ($a =~ /^(.*?)(0*)0(1*)1$/o)
+      { length $3 or ($a,$b) = ($1,$2.'0P'.$b), next;
+        my $z = ('0' x length $3).'N'.$b;
+        ($a,$b) = length $2 ? ($1,$2.'P'.$z) : ($1.'1',$z); }
+    $b =~ s/^0*//;
+    return $b; }
 
 sub recsas
   { my $s = $_[0];
