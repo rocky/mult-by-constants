@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.5 2000/11/22 01:15:18 vlefevre Exp vlefevre $';
+my $RCSID = '$Id: patterns 1.6 2000/11/22 01:52:39 vlefevre Exp vlefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -46,7 +46,7 @@ if ($mode eq 'a')
   }
 elsif ($mode eq 'm' || $mode eq 'b')
   {
-    my ($i,$n);
+    my ($i,$n,%d);
 
     ($n = $ARGV[0]) =~ /^\d+$/ && $n > 1 or die $Usage;
     my ($pmax,$psum) = (0,0);
@@ -69,6 +69,7 @@ elsif ($mode eq 'm' || $mode eq 'b')
         <RD> =~ /^Cost\($i\) = (\d+)$/ or die "$proc: error with bernstein";
         $bsum += $1;
         $1 > $bmax and $bmax = $1;
+        $q != $1 and $d{$q-$1}++;
       }
     if ($mode eq 'b')
       {
@@ -81,6 +82,12 @@ elsif ($mode eq 'm' || $mode eq 'b')
       }
     print "qmax = $pmax\n";
     print "qav = $psum / 2^", $n-2, " = ", $psum/(1<<($n-2)), "\n";
+    if (%d)
+      {
+        print "\nDifferences:\n";
+        foreach (sort { $a <=> $b } keys %d)
+          { printf "%+d: %5d\n", $_, $d{$_} }
+      }
   }
 elsif ($mode eq 'w')
   {
