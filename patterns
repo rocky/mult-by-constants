@@ -2,7 +2,7 @@
 
 use strict;
 
-my $RCSID = '$Id: patterns 1.22 2001/02/06 14:01:32 lefevre Exp lefevre $';
+my $RCSID = '$Id: patterns 1.23 2001/02/06 14:10:20 lefevre Exp lefevre $';
 my ($proc) = $RCSID =~ /Id: (\S+)/ or die;
 
 my $Usage = <<EOF;
@@ -332,7 +332,7 @@ sub gsas
         print "    u1 = $u1\n" if ($level > 2);
         my $u2 = &clear($x[$i2], $v, 0);
         print "    u2 = $u2\n" if ($level > 2);
-        push @x, &makeind($t, 1);
+        push @x, &makeind($t);
         $i2 >= $i1 or die;
         splice @x, $i2, 1, length($u2) > 1 ? &makeind($x[$i2]->{'s'}) : ();
         splice @x, $i1, 1, length($u1) > 1 ? &makeind($x[$i1]->{'s'}) : ()
