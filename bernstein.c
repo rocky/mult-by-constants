@@ -2,6 +2,9 @@
  * Multiplication by a Constant -- Bernstein's Algorithm
  *
  * Usage: bernstein <mode> [ <constant> ... ]
+ *
+ * Compile with -DPRUNE to prune the tree.
+ * Compile with -DNCALLS to get the number of get_node() and try() calls.
  */
 
 #include <stdlib.h>
@@ -50,7 +53,7 @@ typedef unsigned long int VALUE;
 #define even(n) (!odd(n))
 
 enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST,
-       EXIT_INTERROR };
+       EXIT_INTERROR, EXIT_OVERFLOW };
 
 typedef enum { INVALID, NOOP, ADD1, SUB1, FADD, FSUB } OP;
 static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
@@ -68,6 +71,9 @@ typedef struct node {
 static NODE *hash_table[HASH_SIZE];
 static long int non = 0;  /* number of nodes */
 static int mode;
+#ifdef NCALLS
+static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
+#endif
 
 void init_hash(void);
 VALUE get_cst(char *s);
@@ -167,6 +173,21 @@ NODE *get_node(VALUE n)
   unsigned int hash;
   NODE *node;
 
+#ifdef NCALLS
+  if (++ngn == 0)
+  {
+    fprintf(stderr, "bernstein: ngn overflow\n");
+    exit(EXIT_OVERFLOW);
+  }
+#endif
+
+  if (mode >= 2)
+#ifdef PRUNE
+    printf("get_node %" VALUEFMT " %u\n", n, limit);
+#else
+    printf("get_node %" VALUEFMT "\n", n);
+#endif
+
   hash = n % HASH_SIZE;
   node = hash_table[hash];
 
@@ -182,6 +203,13 @@ NODE *get_node(VALUE n)
     node = node->next;
   }
 
+#ifdef NCALLS
+  if (++nmalloc == 0)
+  {
+    fprintf(stderr, "bernstein: nmalloc overflow\n");
+    exit(EXIT_OVERFLOW);
+  }
+#endif
   node = malloc(sizeof *node);
   if (!node)
   {
@@ -236,6 +264,14 @@ void try(VALUE n, NODE *node, OP opcode,
 {
   NODE *tmp_node;
 
+#ifdef NCALLS
+  if (++ntry == 0)
+  {
+    fprintf(stderr, "bernstein: ntry overflow\n");
+    exit(EXIT_OVERFLOW);
+  }
+#endif
+
   while(even(n))
   {
     n >>= 1;
@@ -251,6 +287,9 @@ void try(VALUE n, NODE *node, OP opcode,
 #endif
 
   cost += tmp_node->cost;
+#ifdef PRUNE
+  if (cost > *limit) return;
+#endif
   if (!node->parent || cost < node->cost)
   {
     node->parent = tmp_node;
@@ -260,6 +299,10 @@ void try(VALUE n, NODE *node, OP opcode,
 #ifdef PRUNE
     *limit = cost - 1;
 #endif
+    if (mode >= 2)
+      printf("node %" VALUEFMT ": parent %" VALUEFMT ", opcode %d, "
+             "shift count %u, cost %u\n", node->value,
+             node->parent->value, node->opcode, node->shift, node->cost);
   }
 }
 
@@ -288,6 +331,11 @@ void bernstein(VALUE n)
   printf("Cost(%" VALUEFMT ") = %u\n", n, node->cost);
   if (mode)
     emit_code(node);
+#ifdef NCALLS
+  printf("%lu calls to get_node()\n", ngn);
+  printf("%lu calls to try()\n", ntry);
+  printf("%lu calls to malloc()\n", nmalloc);
+#endif
   fflush(stdout);
 }
 
@@ -318,4 +366,4 @@ unsigned int emit_code(NODE *node)
 }
 
 
-/* $Id: bernstein.c 1.6 2000/11/23 11:22:16 lefevre Exp lefevre $ */
+/* $Id: bernstein.c 1.7 2000/11/23 11:26:38 lefevre Exp lefevre $ */
