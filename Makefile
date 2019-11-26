@@ -20,6 +20,10 @@ all: check
 check:
 	py.test pytest
 
+#: Run all tests with verbose debug-output
+check-debugged:
+	DEBUG=1 py.test -s pytest
+
 #: Clean up temporary files and .pyc files
 clean: clean_pyc
 	$(PYTHON) ./setup.py $@

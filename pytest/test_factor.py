@@ -9,7 +9,7 @@ def test_factor():
     if debug:
         print_operations(n, min_cost, result)
     result =  []
-    assert min_cost == m.try_factor(
+    assert min_cost == m.try_shift_op_factor(
         n, 5, "add", 1, 0, min_cost, []
     ), "4 is not a factor of 27, so we keep old min_cost"
 
@@ -18,6 +18,6 @@ def test_factor():
         if debug:
             print_operations(n, min_cost, result)
         result = []
-        assert 4 == m.try_factor(
+        assert 4 == m.try_shift_op_factor(
             n, factor, "add", shift_amount, 0, min_cost, []
         ), f"Result should use the fact that {factor} is a factor of {n}"
