@@ -1,8 +1,9 @@
-from mult_by_const import MultConst
-
+from mult_by_const import MultConst, print_operations
+import os
 
 def test_binary_method():
-    m = MultConst(debug=False)
+    debug = "DEBUG" in os.environ
+    m = MultConst(debug=debug)
     for (n, expect) in (
         (0, 0),
         (1, 0),
@@ -16,4 +17,6 @@ def test_binary_method():
         (53, 6),
     ):
         cost, result = m.binary_sequence(n)
+        if debug:
+            print_operations(cost, n, result)
         assert expect == cost, f"cost({n}) = {cost}; expected it to be {expect}."

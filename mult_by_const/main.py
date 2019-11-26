@@ -1,45 +1,85 @@
 #!/usr/bin/env python
-from typing import List, Set, Dict, Tuple, Optional
+from typing import List, Tuple
+from math import sqrt
+from copy import deepcopy
 
-multSequence: List[int] = [1]
 
-def consecutive_zeros(n: int)->(int, int):
+def consecutive_zeros(n: int) -> Tuple[int, int]:
     shift_amount = 0
     while n % 2 == 0:
         shift_amount += 1
         n >>= 1
     return (shift_amount, n)
 
-def consecutive_ones(n: int)->(int, int):
+
+def consecutive_ones(n: int) -> Tuple[int, int]:
     one_run_count = 0
     while n % 2 == 1:
         one_run_count += 1
         n >>= 1
     return (one_run_count, n)
 
+
+FACTOR_FLAG = -1
+
+
 class Operation:
-    def __init__(self, op, cost, value, amount=None):
-        self.op = op
+    """Object contining information about a particular operation or instruction as it pertains
+    to the instruction sequence"""
+
+    def __init__(self, op: str, cost: int, amount: int):
+        self.op = op  # The name of the operation; e.g. "shift", "add", "subtract"
+
+        # "cost" is redundant and can be computed from the "op" and "amount";
+        # we add it for convenience
         self.cost = cost
-        self.value = value
+
+        # If "op" is a "shift", then it is amount to shift.
+        # if "op" is an "add or subtract", then it is either 1 if we
+        # add/subtract one, and FACTOR_FLAG if we add/subtract a factor value.
         self.amount = amount
 
     def __repr__(self):
-        if self.amount is not None:
-            return (
-                f"op: {self.op}({self.amount}),\tvalue: {self.value}, cost: {self.cost}"
-            )
-        else:
-            return f"op: {self.op},\tvalue: {self.value}, cost: {self.cost}"
-        pass
+        return f"op: {self.op}({self.amount}),\tcost: {self.cost}"
 
 
-def print_operations(n: int, cost: int, ops: List[Operation]) -> None:
-    print(f"Instruction sequence for {n}, total cost: {cost}:")
-    for op in ops:
-        print(op)
-        pass
+def print_operations(n: int, cost: int, instrs: List[Operation]) -> None:
     print("-" * 45)
+    print(f"Instruction sequence:")
+    if n == 0:
+        i = 0
+    else:
+        i = 1
+    j = 1
+    cost = 0
+    for instr in instrs:
+        cost += instr.cost
+        if instr.op == "shift":
+            j = i
+            i <<= instr.amount
+            print(f"op: {instr.op}({instr.amount}),\tvalue: {i}, cost: {instr.cost}")
+        elif instr.op == "add":
+            if instr.amount == 1:
+                i += 1
+                print(f"op: {instr.op},\tvalue: {i}, cost: {instr.cost}")
+            else:
+                i += j
+                print(f"op: {instr.op}*,\tvalue: {i}, cost: {instr.cost}")
+        elif instr.op == "subtract":
+            if instr.amount == 1:
+                i -= 1
+                print(f"op: {instr.op},\tvalue: {i}, cost: {instr.cost}")
+            else:
+                i -= j
+                print(f"op: {instr.op}*,\tvalue: {i}, cost: {instr.cost}")
+        else:
+            print(f"unknown op {instr.op}")
+            print(instr)
+        pass
+
+    print(f"Multiplier {n}, total cost: {cost}")
+    print("=" * 45)
+    assert n == i, f"Multiplier should be {n}, not computed value {i}"
     return
 
 
@@ -59,7 +99,48 @@ class MultConst:
     def shift_cost(self, num: int) -> int:
         return 1
 
-    def binary_sequence(self, n: int) -> List[Operation]:
+    def make_odd(self, n: int, cost: int, result: List[Operation]) -> Tuple[int, int]:
+        """Handle low-order 0's with a single shift.
+           Note: those machines that can only do a single shift of one place
+           or those machines whose time varies with the shift amount, that is covered
+           by the self.shift_cost function
+        """
+        shift_amount, n = consecutive_zeros(n)
+        if shift_amount:
+            shift_cost = self.shift_cost(shift_amount)
+            cost += shift_cost
+            result.append(Operation("shift", shift_cost, shift_amount))
+            pass
+        return (n, cost)
+
+    def try_factor(
+        self,
+        n: int,
+        factor: int,
+        op: str,
+        shift_amount: int,
+        lower: int,
+        upper: int,
+        result: List[Operation],
+    ) -> int:
+        if (n % factor) == 0:
+            glue_cost = self.op_costs[op] + self.shift_cost(shift_amount)
+            new_lower = lower + glue_cost
+            if new_lower < upper:
+                m = n // factor
+                if self.debug:
+                    print(f"trying factor {factor}")
+                try_cost = self.alpha_beta_search(m, upper, new_lower, result)
+                if try_cost < upper:
+                    result.append(Operation("shift", self.shift_cost(shift_amount),
+                                            shift_amount))
+                    result.append(Operation(op, self.op_costs[op], FACTOR_FLAG))
+                    upper = try_cost
+                pass
+            pass
+        return upper
+
+    def binary_sequence(self, n: int) -> Tuple[int, List[Operation]]:
         """Returns the cost and operation sequence using the binary
         representation of the number.
 
@@ -96,54 +177,48 @@ class MultConst:
         110     3     shift one; add; shift one
         111:    2     shift three; subtract one      - if subtract is available
         111:    4     shift one; add; shift one; add - if subtract is not available
-
         """
 
         # FIXME allow negative numbers too.
         assert n >= 0, "We handle only positive numbers"
-
-        if self.debug:
-            print(bin(n)[2:])
-
         if n == 0:
             return (0, [Operation("constant 0", 0, 0)])
         elif n == 1:
             return (0, [Operation("noop", 0, 1)])
 
-        result = []  # Sequence of operations
-        cost = 0     # total cost of sequence
+        result: List[Operation] = []  # Sequence of operations
+        return self.binary_sequence_inner(n, result)
+
+    def binary_sequence_inner(self, n: int, result: List[Operation]) -> Tuple[int, List[Operation]]:
+        if self.debug:
+            print("binary method for", bin(n)[2:])
+
+        assert n > 0
+
+        cost = 0  # total cost of sequence
         while n > 1:
 
-            # Handle low-order 0's with a single shift.
-            # Note: those machines that can only do a single shift of one place
-            # or those machines whose time varies with the shift amount, that is covered
-            # by the self.shift_cost function
-            m = n
-            shift_amount, n  = consecutive_zeros(n)
-            if shift_amount:
-                shift_cost = self.shift_cost(shift_amount)
-                cost += shift_cost
-                result.append(Operation("shift", shift_cost, m, shift_amount))
-                continue
+            n, cost = self.make_odd(n, cost, result)
 
-            # Handle low-order 1's via adds and subtracts if subtracts are available.
+            if n == 1:
+                break
+
+            # Handle low-order 1's via "adds", and also "subtracts" if subtracts are available.
             #
             one_run_count, m = consecutive_ones(n)
             if one_run_count:
                 if "subtract" in self.op_costs and one_run_count > 2:
                     subtract_cost = self.op_costs["subtract"]
-                    result.append(Operation("subtract", subtract_cost, n))
+                    result.append(Operation("subtract", subtract_cost, 1))
                     subtract_cost = self.shift_cost(one_run_count)
                     cost += subtract_cost
                     n += 1
                     pass
                 else:
                     add_cost = self.op_costs["add"]
-                    result.append(Operation("add", add_cost, n))
+                    result.append(Operation("add", add_cost, 1))
                     cost += add_cost
                     n -= 1
-                    if n == 1:
-                        break
                     pass
                 pass
             pass
@@ -151,11 +226,145 @@ class MultConst:
         result.reverse()
         return (cost, result)
 
+    def find_mult_sequence(self, n: int) -> Tuple[int, List[Operation]]:
+        """Top-level searching routine. Computes binary method upper bound
+        and then does setup to the alpha-beta search
+        """
+
+        # The binary sequence gives a workable upper bound on the cost
+        bin_cost, bin_result = self.binary_sequence(n)
+
+        result: List[Operation] = []  # Sequence of operations
+        n, cost = self.make_odd(n, 0, result)
+        cost = self.alpha_beta_search(n, bin_cost, cost, result)
+        return cost, result
+
+    def alpha_beta_search(
+        self, n: int, upper: int, lower: int, result: List[Operation]
+    ) -> int:
+        """Alpha-beta search
+
+        n: is the (sub-)multiplier we are seeking at this point in the
+           search.  Note that it is *not* the initial multiplier
+           sought.
+
+        upper: is the cost of the best sequence of instructions we've
+               seen so far, and that is recorded in "results".  We get
+               this value initially using the binary method, but it
+               can be lowered as we find better sequences.
+
+        lower: is the cost of the candidate instruction prefix
+               sequence we've seen so far.  This prefix sequence is
+               not the full sequence. The cost of further sequences
+               get added to this cost to make the entire sequence
+               complete. If it exceeds "upper", then this sequence is
+               abandoned because there's some other sequence that is
+               better.
+
+        We return the lowest cost we can find using "n" in the sequence. Note that we
+        don't return the cost of computing "n", but rather of the total sequence. If
+        you subtract the "lower" value *on entry* than that is the cost of computing "n".
+        """
+        if self.debug:
+            print(f"alph-beta search for {n}")
+
+        n, shift_cost = self.make_odd(n, 0, result)
+        lower += shift_cost
+        search_result = deepcopy(result)
+
+        # The binary sequence gives a workable lower bound on the cost
+        bin_cost, bin_result = self.binary_sequence_inner(n, result)
+        bin_cost += lower
+
+        if bin_cost > upper:
+            return upper
+
+        upper = bin_cost
+
+        sqrt_n = int(sqrt(n))
+
+        # The first factors, 3 = 2+1, and 5 = 4+1, are done special
+        # and out of the "while" loop below, because we don't want to
+        # consider subtraction factors 2-1 = 1, or 4-1 = 3.
+        #
+        # The latter, 3, is covered by 2+1 of the "for" loop below
+        for factor in (3, 5):
+            if factor > sqrt_n:
+                break
+            upper = self.try_factor(
+                n, factor, "add", 1, lower, upper, search_result
+            )
+            pass
+
+        i, j = 3, 8
+        while i < sqrt_n:
+            upper = self.try_factor(
+                n, j + 1, "add", i, lower, upper, search_result
+            )
+            upper = self.try_factor(
+                n, j - 1, "subtract", i, lower, upper, search_result
+            )
+
+            # Any other factors to try?
+
+            i += 1
+            j <<= 1
+            pass
+
+        # Try subtracting one
+        glue_cost = self.op_costs["subtract"] + self.shift_cost(i)
+        new_lower = lower + glue_cost
+        if new_lower < upper:
+            try_cost = self.alpha_beta_search(n - 1, upper, new_lower, search_result)
+            if try_cost < upper:
+                # FIXME: Save the sequence
+                upper = try_cost
+
+        # glue_cost = self.cost["add"] + self.shift_cost(i)
+        # new_lower = lower + glue_cost
+        # if new_lower < upper:
+        #     try_cost = self.alpha_beta_search(n+1, upper, new_lower, result)
+        #     if try_cost < min_cost:
+        #         # FIXME: Save the sequence
+        #         min_cost = try_cost
+
+        assert bin_cost >= upper
+
+        if bin_cost == upper:
+            result = bin_result
+        else:
+            result = search_result
+            pass
+
+        # upper is the exact cost, for the ENTIRE SEQUENCE in requelt that we could find in this pass.
+        return upper
+
     pass
 
 
 if __name__ == "__main__":
     m = MultConst()
-    for n in list(range(9)) + [53, 93]:
-        cost, result = m.binary_sequence(n)
-        print_operations(n, cost, result)
+    # for n in list(range(9)) + [53, 93]:
+    #     cost, result = m.binary_sequence(n)
+    #     print_operations(n, cost, result)
+
+    # result: List[Operation] = []
+    # min_cost = 6
+    # n = 27
+    # assert min_cost == m.try_factor(
+    #     n, 5, "add", 1, 0, min_cost, result
+    # ), "4 is not a factor of 27, so we keep old min_cost"
+
+    # result = []
+    # cost = m.try_factor(n, 3, "add", 1, 0, min_cost, result)
+    # assert 4 == cost, f"Result should use the fact that 3 is a factor of {n}"
+    # print_operations(n, cost, result)
+
+    n = 341
+    min_cost, result = m.binary_sequence(n)
+    print_operations(n, min_cost, result)
+    result = []
+    cost = m.try_factor(n, 31, "subtract", 5, 0, min_cost, result)
+    print(cost)
+    # assert 4 == cost, f"Result should use the fact that 7 is a factor of {n}"
+    print_operations(n, cost, result)
