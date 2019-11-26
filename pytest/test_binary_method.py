@@ -6,7 +6,7 @@ def test_binary_method():
     m = MultConst(debug=debug)
     for (n, expect) in (
         (0, 1),
-        (1, 1),
+        (1, 0),
         (2, 1),
         (3, 2),
         (4, 1),
@@ -18,7 +18,7 @@ def test_binary_method():
     ):
         cost, result = m.binary_sequence(n)
         if debug:
-            print_operations(cost, n, result)
+            print_operations(n, cost, result)
         assert expect == cost, f"cost({n}) = {cost}; expected it to be {expect}."
 
 # If run as standalone

@@ -82,6 +82,8 @@ def print_operations(n: int, cost: int, instrs: List[Instruction]) -> None:
                 print(f"op: {instr.op}*,\tvalue: {i}, cost: {instr.cost}")
         elif instr.op == "constant 0":
             print(f"op: {instr.op},\tvalue: {i}, cost: {instr.cost}")
+        elif instr.op == "noop":
+            print(f"op: {instr.op},\tvalue: {i}, cost: {instr.cost}")
         else:
             print(f"unknown op {instr.op}")
             print(instr)
@@ -98,6 +100,8 @@ class MultConst:
         "shift": 1,
         "add": 1,
         "subtract": 1,
+        "noop": 0,
+        "const": 1,
         # "shift_add" = 1  # old RISC machines have this
     }
 
@@ -237,7 +241,7 @@ class MultConst:
         if n == 0:
             return (1, [Instruction("constant 0", 1, 0)])
         elif n == 1:
-            return (1, [Instruction("noop", 1, 0)])
+            return (0, [Instruction("noop", 0, 0)])
 
         result: List[Instruction] = []  # Sequence of operations
         return self.binary_sequence_inner(n, result)
@@ -409,9 +413,9 @@ class MultConst:
 
 if __name__ == "__main__":
     m = MultConst()
-    # for n in list(range(9)) + [53, 93]:
-    #     cost, result = m.binary_sequence(n)
-    #     print_operations(n, cost, result)
+    for n in list(range(2)) + [53, 93]:
+        cost, result = m.binary_sequence(n)
+        print_operations(n, cost, result)
 
     # result: List[Instruction] = []
     # min_cost = 6
