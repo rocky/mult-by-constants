@@ -1,4 +1,4 @@
-Code to compute the mininum number of shifts, adds, subtracts, under different cost models).
+Code to compute the mininum number of shifts, adds, subtracts, under different cost models.
 
 See my _Software: Practice and Experience_ paper [Multiplication by integer constants](https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.4380160704) for details.
 
