@@ -20,6 +20,10 @@ all: check
 check:
 	py.test pytest
 
+#: Static type checking
+type-check:
+	mypy mult_by_const
+
 #: Run all tests with verbose debug-output
 check-debugged:
 	DEBUG=1 py.test -s pytest

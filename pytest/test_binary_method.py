@@ -1,4 +1,4 @@
-from mult_by_const import MultConst, print_operations
+from mult_by_const import MultConst, print_instructions
 import os
 
 def test_binary_method():
@@ -18,7 +18,7 @@ def test_binary_method():
     ):
         cost, result = m.binary_sequence(n)
         if debug:
-            print_operations(n, cost, result)
+            print_instructions(result, n, cost)
         assert expect == cost, f"cost({n}) = {cost}; expected it to be {expect}."
 
 # If run as standalone
