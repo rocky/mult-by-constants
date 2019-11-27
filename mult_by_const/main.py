@@ -2,34 +2,14 @@
 from typing import List, Tuple, Dict
 from sys import maxsize
 
-from mult_by_const.instruction import (
-    FACTOR_FLAG,
-    Instruction,
-    print_instructions,
+from mult_by_const.instruction import FACTOR_FLAG, Instruction, print_instructions
+
+from mult_by_const.util import (
+    bin2str,
+    consecutive_zeros,
+    consecutive_ones,
+    default_shift_cost,
 )
-
-
-def consecutive_zeros(n: int) -> Tuple[int, int]:
-    shift_amount = 0
-    while n % 2 == 0:
-        shift_amount += 1
-        n >>= 1
-    return (shift_amount, n)
-
-
-def consecutive_ones(n: int) -> Tuple[int, int]:
-    one_run_count = 0
-    while n % 2 == 1:
-        one_run_count += 1
-        n >>= 1
-    return (one_run_count, n)
-
-
-def default_shift_cost(num: int) -> int:
-    # The default is to use a simple model where shifting by any amount is
-    # done in a fixed amount of time which is the same as an add/subtract
-    # operation.
-    return 1
 
 
 class MultConst:
@@ -114,7 +94,9 @@ class MultConst:
         upper: int,  # cost of a valid instruction sequence
         lower: int,  # cost of instructions seen so far
         instrs: List[Instruction],  # An instruction sequence with cost "upper"
-        candidate_instrs: List[Instruction],  # The best current candidate sequencer. It is updated.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It is updated.
     ) -> Tuple[int, List[Instruction]]:
         if (n % factor) == 0:
             shift_cost = self.shift_cost(shift_amount)
@@ -122,11 +104,16 @@ class MultConst:
             if lower < upper:
                 m = n // factor
                 if self.debug:
-                    print(f"trying factor {factor}")
-                try_cost, try_instrs = self.alpha_beta_search(m, upper - lower, instrs)
+                    print(f"Trying factor {factor}...")
+                try_cost, try_instrs = self.alpha_beta_search(m, upper - lower)
                 if lower + try_cost < upper:
-                    candidate_instrs = try_instrs + [Instruction("shift", shift_cost, shift_amount)]
-                    candidate_instrs.append(Instruction(op, self.op_costs[op], FACTOR_FLAG))
+                    candidate_instrs = try_instrs + [
+                        Instruction("shift", shift_cost, shift_amount)
+                    ]
+                    candidate_instrs.append(
+                        Instruction(op, self.op_costs[op], FACTOR_FLAG)
+                    )
+                    candidate_instrs = candidate_instrs + instrs
                     upper = lower + try_cost
                 pass
             pass
@@ -178,15 +165,13 @@ class MultConst:
         elif n == 1:
             return (0, [Instruction("noop", 0, 0)])
 
-        result: List[Instruction] = []  # Sequence of operations
-        return self.binary_sequence_inner(n, result)
+        return self.binary_sequence_inner(n)
 
-    def binary_sequence_inner(
-        self, n: int, result: List[Instruction]
-    ) -> Tuple[int, List[Instruction]]:
+    def binary_sequence_inner(self, n: int) -> Tuple[int, List[Instruction]]:
         assert n > 0
         orig_n = n
 
+        result: List[Instruction] = []
         cost = 0  # total cost of sequence
         while n > 1:
 
@@ -217,7 +202,7 @@ class MultConst:
 
         result.reverse()
         if self.debug:
-            print(f"binary method for {orig_n} = {bin(orig_n)[2:]} has cost {cost}")
+            print(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
         return (cost, result)
 
     def find_mult_sequence(self, n: int) -> Tuple[int, List[Instruction]]:
@@ -234,12 +219,10 @@ class MultConst:
             cache_upper, bin_instrs = self.binary_sequence(n)
             self.mult_cache[n] = (0, cache_upper, False, bin_instrs)
 
-        cost, instrs = self.alpha_beta_search(n, cache_upper, [])
+        cost, instrs = self.alpha_beta_search(n, cache_upper)
         return cost, instrs
 
-    def alpha_beta_search(
-        self, n: int, upper: int, instrs: List[Instruction]
-    ) -> Tuple[int, List[Instruction]]:
+    def alpha_beta_search(self, n: int, upper: int) -> Tuple[int, List[Instruction]]:
         """Alpha-beta search
 
         n: is the (sub-)multiplier we are seeking at this point in the
@@ -256,7 +239,7 @@ class MultConst:
         you subtract the "lower" value *on entry* than that is the cost of computing "n".
         """
         if self.debug:
-            print(f"alpha-beta search for {n} in max cost: {upper}")
+            print(f"\nalpha-beta search for {n} in max cost: {upper}")
 
         # Lowers the cost of the instruction
         # sequence we've seen so far.  This sequence is
@@ -267,12 +250,13 @@ class MultConst:
         # better.
         lower: int = 0
 
-        assert upper > 0   # or lower < upper
+        assert upper > 0  # or lower < upper
 
         cache_lower, cache_upper, finished, cache_instrs = self.cache_lookup(n)
         if finished:
             return upper, cache_instrs
 
+        instrs: List[Instruction] = []
         m, shift_cost = self.make_odd(n, 0, instrs)
 
         # If we were given an even number, then add the shift cost
@@ -282,21 +266,20 @@ class MultConst:
             if lower >= upper:
                 # Saw a better result prevously. Do a cutoff.
                 if self.debug:
-                    print(f"cutoff for {n} in cost {lower} > {upper}")
+                    print(f"**cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
 
             cache_lower, cache_upper, finished, cache_instrs = self.cache_lookup(m)
             if finished:
                 upper = lower + cache_upper
-                instrs += cache_instrs
-                self.mult_cache[m] = (upper, upper, True, instrs)
-                return upper, instrs
+                self.mult_cache[m] = (upper, upper, True, cache_instrs)
+                return upper, cache_instrs + instrs
             pass
 
         # If no (incomplete) cached value found, use
         # the binary sequence which gives a workable upper bound on the cost.
         if cache_upper == maxsize:
-            bin_cost, bin_instrs = self.binary_sequence_inner(m, [])
+            bin_cost, bin_instrs = self.binary_sequence_inner(m)
 
             # Cache the binary sequence portion result
             self.mult_cache[m] = (0, bin_cost, False, bin_instrs)
@@ -317,11 +300,12 @@ class MultConst:
         # consider subtraction factors 2-1 = 1, or 4-1 = 3.
         #
         # The latter, 3, is covered by 2+1 of the "for" loop below
-        for factor in (3, 5):
+
+        for factor, shift_amount in ((3, 1), (5, 2)):
             if factor > n:
                 break
             upper, candidate_instrs = self.try_shift_op_factor(
-                m, factor, "add", 1, upper, lower, instrs, candidate_instrs
+                m, factor, "add", shift_amount, upper, lower, instrs, candidate_instrs
             )
             pass
 
@@ -344,9 +328,9 @@ class MultConst:
         glue_cost = self.op_costs["subtract"] + shift_cost
         try_lower = lower + glue_cost
         if try_lower < upper:
-            try_cost, try_instrs = self.alpha_beta_search(m - 1, upper - try_lower, instrs)
+            try_cost, try_instrs = self.alpha_beta_search(m - 1, upper - try_lower)
             if try_cost + try_lower < upper:
-                candidate_instrs = try_instrs
+                candidate_instrs = instrs + try_instrs
                 candidate_instrs.append(Instruction("add", self.op_costs["add"], 1))
                 upper = try_cost + try_lower
 
@@ -373,9 +357,9 @@ if __name__ == "__main__":
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    n = 341
-    min_cost, instrs = m.binary_sequence(n)
-    cost, instrs = m.find_mult_sequence(n)
-    print_instructions(instrs, n, cost)
+    for n in range(340, 344):
+        min_cost, instrs = m.binary_sequence(n)
+        cost, instrs = m.find_mult_sequence(n)
+        print_instructions(instrs, n, cost)
     # print(cost)
-    assert 6 == cost, f"Instrs should use the fact that 31 is a factor of {n}"
+    # assert 6 == cost, f"Instrs should use the fact that 31 is a factor of {n}"

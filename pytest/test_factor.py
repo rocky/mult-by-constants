@@ -1,6 +1,7 @@
 from mult_by_const import MultConst, print_instructions
 import os
 
+
 def test_factor():
     debug = "DEBUG" in os.environ
     m = MultConst(debug=debug)
@@ -8,11 +9,9 @@ def test_factor():
     bin_cost, bin_instrs = m.binary_sequence(n)
     if debug:
         print_instructions(result, n, bin_cost)
-    result =  []
+    result = []
 
-    cost, instrs = m.try_shift_op_factor(
-        n, 5, "add", 2, bin_cost, 0, [], bin_instrs
-    )
+    cost, instrs = m.try_shift_op_factor(n, 5, "add", 2, bin_cost, 0, [], bin_instrs)
     assert bin_cost == cost, "5 is not a factor of 27, so we keep old bin_cost"
 
     for n, factor, shift_amount in ((27, 3, 1), (85, 5, 2)):
@@ -26,6 +25,7 @@ def test_factor():
         assert cost < bin_cost, f"should use the fact that {factor} is a factor of {n}"
         if debug:
             print_instructions(result, n, cost)
+
 
 # If run as standalone
 if __name__ == "__main__":

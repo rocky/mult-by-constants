@@ -1,5 +1,6 @@
 """Code around instructions and instruction sequences"""
 from typing import List
+from mult_by_const.util import bin2str
 
 FACTOR_FLAG = -1
 
@@ -12,7 +13,7 @@ class Instruction:
         self.op = op  # The name of the operation; e.g. "shift", "add", "subtract"
 
         # "cost" is redundant and can be computed from the "op" and "amount";
-        # we add it for convenience
+        # we add it for convenience.
         self.cost = cost
 
         # If "op" is a "shift", then it is amount to shift.
@@ -33,15 +34,18 @@ class Instruction:
         return f"op: {op_str:10}\tcost: {self.cost:2}"
 
 
-SEP_LEN = 50
+# Length of separator lines.
+SEP_LEN = 60
 
 
-def print_instructions(instrs: List[Instruction], n=None, expected_cost=None) -> None:
+def print_instructions(
+    instrs: List[Instruction], n=None, expected_cost=None, prefix=""
+) -> None:
     print("-" * SEP_LEN)
     cost = instruction_sequence_cost(instrs)
-    intro = "Instruction sequence"
+    intro = f"{prefix}Instruction sequence"
     if n is not None:
-        intro += f" for {n:2}"
+        intro += f" for {n:2} = {bin2str(n)}"
     print(f"{intro}, cost: {cost:2}:")
     if n == 0:
         i = 0
