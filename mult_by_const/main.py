@@ -45,7 +45,7 @@ class MultConst:
 
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
-        self.mult_cache: Dict[int, Tuple[int, int, bool, List[Instruction]]] = {}
+        self.mult_cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {}
 
         # The following help with search statistics
         self.cache_hits_exact = 0
@@ -54,7 +54,7 @@ class MultConst:
 
         self.debug = debug
 
-    def cache_lookup(self, n: int) -> Tuple[int, int, bool, List[Instruction]]:
+    def cache_lookup(self, n: int) -> Tuple[float, float, bool, List[Instruction]]:
         """Check if we have cached search results for "n", and return that.
         If not in cached, we will return (0, 0, {}). Note that a prior
         result has been fully only searched if if the lower bound is equal to the
@@ -71,7 +71,7 @@ class MultConst:
             self.cache_hits_partial += 1
         return cache_lower, cache_upper, finished, cache_instr
 
-    def make_odd(self, n: int, cost: int, result: List[Instruction]) -> Tuple[int, int]:
+    def make_odd(self, n: int, cost: float, result: List[Instruction]) -> Tuple[int, float]:
         """Handle low-order 0's with a single shift.
            Note: those machines that can only do a single shift of one place
            or those machines whose time varies with the shift amount, that is covered
@@ -91,13 +91,13 @@ class MultConst:
         factor: int,  # factor to try to divide "n" by
         op: str,  # operation after "shift"; either "add" or "subtract"
         shift_amount: int,  # shift amount used in shift operation
-        upper: int,  # cost of a valid instruction sequence
-        lower: int,  # cost of instructions seen so far
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
         instrs: List[Instruction],  # An instruction sequence with cost "upper"
         candidate_instrs: List[
             Instruction
         ],  # The best current candidate sequencer. It is updated.
-    ) -> Tuple[int, List[Instruction]]:
+    ) -> Tuple[float, List[Instruction]]:
         if (n % factor) == 0:
             shift_cost = self.shift_cost(shift_amount)
             lower += self.op_costs[op] + shift_cost
@@ -119,7 +119,7 @@ class MultConst:
             pass
         return upper, candidate_instrs
 
-    def binary_sequence(self, n: int) -> Tuple[int, List[Instruction]]:
+    def binary_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
         """Returns the cost and operation sequence using the binary
         representation of the number.
 
@@ -167,12 +167,12 @@ class MultConst:
 
         return self.binary_sequence_inner(n)
 
-    def binary_sequence_inner(self, n: int) -> Tuple[int, List[Instruction]]:
+    def binary_sequence_inner(self, n: int) -> Tuple[float, List[Instruction]]:
         assert n > 0
         orig_n = n
 
         result: List[Instruction] = []
-        cost = 0  # total cost of sequence
+        cost: float = 0  # total cost of sequence
         while n > 1:
 
             n, cost = self.make_odd(n, cost, result)
@@ -205,7 +205,7 @@ class MultConst:
             print(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
         return (cost, result)
 
-    def find_mult_sequence(self, n: int) -> Tuple[int, List[Instruction]]:
+    def find_mult_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
         """Top-level searching routine. Computes binary method upper bound
         and then does setup to the alpha-beta search
         """
@@ -222,7 +222,7 @@ class MultConst:
         cost, instrs = self.alpha_beta_search(n, cache_upper)
         return cost, instrs
 
-    def alpha_beta_search(self, n: int, upper: int) -> Tuple[int, List[Instruction]]:
+    def alpha_beta_search(self, n: int, upper: float) -> Tuple[float, List[Instruction]]:
         """Alpha-beta search
 
         n: is the (sub-)multiplier we are seeking at this point in the
@@ -248,7 +248,7 @@ class MultConst:
         # If lower ever exceeds "upper", then this sequence is
         # abandoned because there's some other sequence that is
         # better.
-        lower: int = 0
+        lower: float = 0
 
         assert upper > 0  # or lower < upper
 
