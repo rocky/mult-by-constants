@@ -84,15 +84,17 @@ class MultConst:
         """
         for num in sorted(self.mult_cache.keys()):
             lower, upper, finished, instrs = self.mult_cache[num]
+            # if num == 6:
+            #     from trepan.api import debug; debug()
             upper_any: Any = upper
             if upper == maxsize:
                 upper_any = "inf"
             if finished:
-                cache_str = f"cost: {upper_any:9}"
+                cache_str = f"cost: {upper_any:7}"
                 assert upper == lower
             else:
-                cache_str = f"cost: {(lower + 1):2} ..{upper_any:4}"
-                assert upper > lower
+                cache_str = f"cost: ({lower},{upper_any:4}]"
+                assert upper >= lower
             print(f"{num:3}: {cache_str};\t{str(instrs)}")
         print("\n")
         print(f"Cache hits (finished):\t\t{self.cache_hits_exact:4}")
@@ -301,18 +303,26 @@ class MultConst:
                 # Saw a better result prevously. Do a cutoff after
                 # caching a partial or full result.
                 if m == 1:
+                    # n is a power of two; shift is probably the best
+                    # you can do here, except for may when n == 2,
+                    # and then maybe and "add" might be faster under
+                    # some cost models.
                     self.mult_cache[n] = (upper, upper, True, instrs)
                 else:
-                    self.mult_cache[n] = (lower, maxsize, False, instrs)
+                    self.mult_cache[n] = (lower, lower + cache_upper, False, instrs)
                 if self.debug:
                     print(f"**beta cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
 
             cache_lower, cache_upper, finished, cache_instrs = self.cache_lookup(m)
+            cache_instrs = cache_instrs + instrs
+
             if finished:
+                # Update bounds for n.
                 upper = lower + cache_upper
-                self.mult_cache[m] = (upper, upper, True, cache_instrs)
-                return upper, cache_instrs + instrs
+                self.mult_cache[n] = (lower, upper, False, cache_instrs)
+                # Return what we got. The caller level will discard this though.
+                return upper, cache_instrs
             pass
 
         # If no (incomplete) cached value found, use
@@ -380,6 +390,7 @@ class MultConst:
             # We have another cutoff
             if self.debug:
                 print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
+
             self.mult_cache[n] = (
                 upper,
                 candidate_cost,
