@@ -84,8 +84,6 @@ class MultConst:
         """
         for num in sorted(self.mult_cache.keys()):
             lower, upper, finished, instrs = self.mult_cache[num]
-            # if num == 6:
-            #     from trepan.api import debug; debug()
             upper_any: Any = upper
             if upper == maxsize:
                 upper_any = "inf"
@@ -309,7 +307,8 @@ class MultConst:
                     # some cost models.
                     self.mult_cache[n] = (upper, upper, True, instrs)
                 else:
-                    self.mult_cache[n] = (lower, lower + cache_upper, False, instrs)
+                    upper = cache_upper if cache_upper == maxsize else lower + cache_upper
+                    self.mult_cache[n] = (lower, upper, False, instrs)
                 if self.debug:
                     print(f"**beta cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
