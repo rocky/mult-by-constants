@@ -1,14 +1,20 @@
 #!/usr/bin/env python
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 from sys import maxsize
 
-from mult_by_const.instruction import FACTOR_FLAG, Instruction, print_instructions
+from mult_by_const.instruction import (
+    FACTOR_FLAG,
+    Instruction,
+    print_instructions,
+    instruction_sequence_cost,
+)
 
 from mult_by_const.util import (
     bin2str,
     consecutive_zeros,
     consecutive_ones,
     default_shift_cost,
+    print_sep,
 )
 
 
@@ -45,12 +51,7 @@ class MultConst:
 
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
-        self.mult_cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {}
-
-        # The following help with search statistics
-        self.cache_hits_exact = 0
-        self.cache_hits_partial = 0
-        self.cache_misses = 0
+        self.clear_mult_cache()
 
         self.debug = debug
 
@@ -71,7 +72,38 @@ class MultConst:
             self.cache_hits_partial += 1
         return cache_lower, cache_upper, finished, cache_instr
 
-    def make_odd(self, n: int, cost: float, result: List[Instruction]) -> Tuple[int, float]:
+    def clear_mult_cache(self) -> None:
+        self.mult_cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {}
+        # The following help with search statistics
+        self.cache_hits_exact = 0
+        self.cache_hits_partial = 0
+        self.cache_misses = 0
+
+    def dump_mult_cache(self) -> None:
+        """Dump the instruction cache accumulated.
+        """
+        for num in sorted(self.mult_cache.keys()):
+            lower, upper, finished, instrs = self.mult_cache[num]
+            upper_any: Any = upper
+            if upper == maxsize:
+                upper_any = "inf"
+            if finished:
+                cache_str = f"cost: {upper_any:9}"
+                assert upper == lower
+            else:
+                cache_str = f"cost: {(lower + 1):2} ..{upper_any:4}"
+                assert upper > lower
+            print(f"{num:3}: {cache_str};\t{str(instrs)}")
+        print("\n")
+        print(f"Cache hits (finished):\t\t{self.cache_hits_exact:4}")
+        print(f"Cache hits (unfinished):\t{self.cache_hits_partial:4}")
+        print(f"Cache misses:\t\t\t{self.cache_hits_partial:4}")
+        print_sep()
+        return
+
+    def make_odd(
+        self, n: int, cost: float, result: List[Instruction]
+    ) -> Tuple[int, float]:
         """Handle low-order 0's with a single shift.
            Note: those machines that can only do a single shift of one place
            or those machines whose time varies with the shift amount, that is covered
@@ -222,7 +254,9 @@ class MultConst:
         cost, instrs = self.alpha_beta_search(n, cache_upper)
         return cost, instrs
 
-    def alpha_beta_search(self, n: int, upper: float) -> Tuple[float, List[Instruction]]:
+    def alpha_beta_search(
+        self, n: int, upper: float
+    ) -> Tuple[float, List[Instruction]]:
         """Alpha-beta search
 
         n: is the (sub-)multiplier we are seeking at this point in the
@@ -264,9 +298,14 @@ class MultConst:
         if m != n:
             lower += shift_cost
             if lower >= upper:
-                # Saw a better result prevously. Do a cutoff.
+                # Saw a better result prevously. Do a cutoff after
+                # caching a partial or full result.
+                if m == 1:
+                    self.mult_cache[n] = (upper, upper, True, instrs)
+                else:
+                    self.mult_cache[n] = (lower, maxsize, False, instrs)
                 if self.debug:
-                    print(f"**cutoff for {n} in cost {lower} > {upper}")
+                    print(f"**beta cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
 
             cache_lower, cache_upper, finished, cache_instrs = self.cache_lookup(m)
@@ -336,7 +375,21 @@ class MultConst:
 
         # FIXME: Do the same for "add" as above
 
-        self.mult_cache[n] = (upper, upper, True, candidate_instrs)
+        candidate_cost = instruction_sequence_cost(candidate_instrs)
+        if candidate_cost >= upper:
+            # We have another cutoff
+            if self.debug:
+                print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
+            self.mult_cache[n] = (
+                upper,
+                candidate_cost,
+                upper == candidate_cost,
+                candidate_instrs,
+            )
+            upper = candidate_cost
+        else:
+            self.mult_cache[n] = (upper, upper, True, candidate_instrs)
+            pass
         return upper, candidate_instrs
 
     pass
@@ -361,5 +414,5 @@ if __name__ == "__main__":
         min_cost, instrs = m.binary_sequence(n)
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)
-    # print(cost)
-    # assert 6 == cost, f"Instrs should use the fact that 31 is a factor of {n}"
+        m.dump_mult_cache()
+        # m.clear_mult_cache()

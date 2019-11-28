@@ -28,3 +28,12 @@ def default_shift_cost(num: int) -> int:
 def bin2str(n: int):
     """Like built-in bin(), but we remove the leading 0b"""
     return bin(n)[2:]
+
+
+# Length of separator lines.
+SEP_LEN = 60
+
+
+def print_sep(sep: str = "=") -> None:
+    print(sep * SEP_LEN)
+    return

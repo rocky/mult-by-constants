@@ -10,14 +10,16 @@ PYTHON3 ?= python3
 RM      ?= rm
 LINT    = flake8
 
-#EXTRA_DIST=ipython/ipy_trepan.py trepan
-PHONY=all check clean unittest check-long dist distclean lint flake8 test rmChangeLog clean_pyc
+PHONY=all check clean pytest type-check distclean lint flake8 test rmChangeLog clean_pyc
 
 #: Default target - same as "check"
 all: check
 
-#: Run all tests
-check:
+#: Run all tests - type check and pytest
+check: type-check pytest
+
+#: Run pytest tests
+pytest:
 	py.test pytest
 
 #: Static type checking
