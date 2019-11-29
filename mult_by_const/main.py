@@ -3,6 +3,8 @@ from typing import List, Tuple, Dict, Any
 from sys import maxsize
 
 from mult_by_const.instruction import (
+    check_instruction_sequence_cost,
+    check_instruction_sequence_value,
     FACTOR_FLAG,
     Instruction,
     print_instructions,
@@ -71,6 +73,20 @@ class MultConst:
         else:
             self.cache_hits_partial += 1
         return cache_lower, cache_upper, finished, cache_instr
+
+    def check_mult_cache(self) -> None:
+        # We do sorted so that in the future we can compare
+        # consecutive pairs.
+        for num in sorted(self.mult_cache.keys()):
+            lower, upper, finished, instrs = self.mult_cache[num]
+            if finished:
+                assert lower == upper
+                check_instruction_sequence_cost(upper, instrs)
+                check_instruction_sequence_value(num, instrs)
+            else:
+                assert lower <= upper
+                assert instruction_sequence_cost(instrs) >= lower
+        return
 
     def clear_mult_cache(self) -> None:
         self.mult_cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {}
@@ -425,4 +441,5 @@ if __name__ == "__main__":
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)
         m.dump_mult_cache()
+        m.check_mult_cache()
         # m.clear_mult_cache()

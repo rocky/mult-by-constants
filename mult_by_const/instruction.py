@@ -83,6 +83,18 @@ def print_instructions(
     return
 
 
+def check_instruction_sequence_value(n: int, instrs: List[Instruction]) -> None:
+    actual_value = instruction_sequence_value(instrs)
+    assert n == actual_value, f"{instrs} value is {actual_value}; should be {n}"
+    return
+
+
+def check_instruction_sequence_cost(cost: float, instrs: List[Instruction]) -> None:
+    actual_cost = instruction_sequence_cost(instrs)
+    assert cost == actual_cost, f"{instrs} cost is {actual_cost}; should be {cost}"
+    return
+
+
 def instruction_sequence_cost(instrs: List[Instruction]) -> float:
     cost: float = 0
     for inst in instrs:
@@ -129,3 +141,6 @@ if __name__ == "__main__":
     for inst in instrs:
         print(str(inst))
     print_instructions(instrs)
+    print(
+        f"Instruction value: {instruction_sequence_value(instrs)}, cost: {instruction_sequence_cost(instrs)}"
+    )
