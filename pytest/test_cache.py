@@ -9,9 +9,9 @@ def test_mult_cache():
     for clear_cache in (True, False):
         for n in range(340, 344):
             cost, instrs = m.find_mult_sequence(n)
-            m.check_mult_cache()
+            m.mult_cache.check()
             if clear_cache:
-                m.clear_mult_cache()
+                m.mult_cache.clear()
 
 
 # If run as standalone

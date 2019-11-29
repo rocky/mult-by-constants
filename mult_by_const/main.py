@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple
 from sys import maxsize
 from copy import deepcopy
 
 from mult_by_const.instruction import (
-    check_instruction_sequence_cost,
-    check_instruction_sequence_value,
     FACTOR_FLAG,
     Instruction,
     print_instructions,
@@ -18,8 +16,9 @@ from mult_by_const.util import (
     consecutive_zeros,
     consecutive_ones,
     default_shift_cost,
-    print_sep,
 )
+
+from mult_by_const.cache import MultCache
 
 
 class MultConst:
@@ -55,69 +54,9 @@ class MultConst:
 
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
-        self.clear_mult_cache()
+        self.mult_cache = MultCache()
 
         self.debug = debug
-
-    def cache_lookup(self, n: int) -> Tuple[float, float, bool, List[Instruction]]:
-        """Check if we have cached search results for "n", and return that.
-        If not in cached, we will return (0, 0, {}). Note that a prior
-        result has been fully only searched if if the lower bound is equal to the
-        upper bound.
-        """
-        cache_lower, cache_upper, finished, cache_instr = self.mult_cache.get(
-            n, (0, maxsize, False, [])
-        )
-        if finished:
-            self.cache_hits_exact += 1
-        elif cache_upper == maxsize:
-            self.cache_misses += 1
-        else:
-            self.cache_hits_partial += 1
-        return cache_lower, cache_upper, finished, cache_instr
-
-    def check_mult_cache(self) -> None:
-        # We do sorted so that in the future we can compare
-        # consecutive pairs.
-        for num in sorted(self.mult_cache.keys()):
-            lower, upper, finished, instrs = self.mult_cache[num]
-            if finished:
-                assert lower == upper
-                check_instruction_sequence_cost(upper, instrs)
-                check_instruction_sequence_value(num, instrs)
-            else:
-                assert lower <= instruction_sequence_cost(instrs) <= upper
-        return
-
-    def clear_mult_cache(self) -> None:
-        self.mult_cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {}
-        # The following help with search statistics
-        self.cache_hits_exact = 0
-        self.cache_hits_partial = 0
-        self.cache_misses = 0
-
-    def dump_mult_cache(self) -> None:
-        """Dump the instruction cache accumulated.
-        """
-        # FIXME: compute field widths dynamically
-        for num in sorted(self.mult_cache.keys()):
-            lower, upper, finished, instrs = self.mult_cache[num]
-            upper_any: Any = upper
-            if upper == maxsize:
-                upper_any = "inf"
-            if finished:
-                cache_str = f"cost: {upper_any:7}"
-                assert upper == lower
-            else:
-                cache_str = f"cost: ({lower},{upper_any:4}]"
-                assert upper >= lower
-            print(f"{num:4}: {cache_str};\t{str(instrs)}")
-        print("\n")
-        print(f"Cache hits (finished):\t\t{self.cache_hits_exact:4}")
-        print(f"Cache hits (unfinished):\t{self.cache_hits_partial:4}")
-        print(f"Cache misses:\t\t\t{self.cache_hits_partial:4}")
-        print_sep()
-        return
 
     def make_odd(
         self, n: int, cost: float, result: List[Instruction]
@@ -205,14 +144,14 @@ class MultConst:
                 n_instrs = deepcopy(neighbor_instrs)
                 n_instrs.append(Instruction(op_str, op_cost, 1))
                 n_cost = instruction_sequence_cost(n_instrs)
-                self.mult_cache[n] = (n_cost, n_cost, True, n_instrs)
+                self.mult_cache.insert(n, n_cost, n_cost, True, n_instrs)
 
                 # Compute the caller's "n" (not the "n" passed here),
                 # by adding on "instrs"
                 candidate_instrs = n_instrs + instrs
                 upper = instruction_sequence_cost(candidate_instrs)
                 caller_n = instruction_sequence_value(candidate_instrs)
-                self.mult_cache[caller_n] = (0, upper, False, candidate_instrs)
+                self.mult_cache.insert(caller_n, 0, upper, False, candidate_instrs)
                 pass
 
         return upper, candidate_instrs
@@ -308,14 +247,14 @@ class MultConst:
         and then does setup to the alpha-beta search
         """
 
-        cache_lower, cache_upper, finished, cache_instr = self.cache_lookup(n)
+        cache_lower, cache_upper, finished, cache_instr = self.mult_cache.lookup(n)
         if finished:
             return cache_upper, cache_instr
 
         if cache_upper == maxsize:
             # The binary sequence gives a workable upper bound on the cost
             cache_upper, bin_instrs = self.binary_sequence(n)
-            self.mult_cache[n] = (0, cache_upper, False, bin_instrs)
+            self.mult_cache.insert(n, 0, cache_upper, False, bin_instrs)
 
         cost, instrs = self.alpha_beta_search(n, cache_upper)
         return cost, instrs
@@ -352,7 +291,7 @@ class MultConst:
 
         assert upper > 0  # or lower < upper
 
-        cache_lower, cache_upper, finished, cache_instrs = self.cache_lookup(n)
+        cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(n)
         if finished:
             return upper, cache_instrs
 
@@ -371,24 +310,35 @@ class MultConst:
                     # you can do here, except for may when n == 2,
                     # and then maybe and "add" might be faster under
                     # some cost models.
-                    self.mult_cache[n] = (upper, upper, True, instrs)
+                    self.mult_cache.insert(n, upper, upper, True, instrs)
                 else:
                     cost = (
                         cache_upper if cache_upper == maxsize else lower + cache_upper
                     )
-                    self.mult_cache[n] = (lower, cost, False, instrs)
+                    self.mult_cache.insert(n, lower, cost, False, instrs)
                 if self.debug:
                     print(f"**beta cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
 
-            cache_lower, cache_upper, finished, cache_instrs = self.cache_lookup(m)
+            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(m)
             cache_instrs = cache_instrs + instrs
 
             if finished:
-                # Update bounds for n.
-                upper = lower + cache_upper
-                self.mult_cache[n] = (lower, upper, False, cache_instrs)
-                # Return what we got. The caller level will discard this though.
+                # We've gone through this routine before, or with "m",
+                # i.e. "n" without the shift operation. So we have the
+                # best searching solution we can find using this code.
+
+                try_upper = lower + cache_upper
+                if try_upper < upper:
+                    # Update cache bounds for n, which includes the "shift"
+                    print(f"XXX 2 {try_upper} < {upper}")
+                    upper = try_upper
+                    self.mult_cache(n, lower, upper, False, cache_instrs)
+                else:
+                    print(f"XXX {try_upper} >= {upper}")
+
+                # Return what we got. The caller level may discard this
+                # either immediately or eventually.
                 return upper, cache_instrs
             pass
 
@@ -398,7 +348,7 @@ class MultConst:
             bin_cost, bin_instrs = self.binary_sequence_inner(m)
 
             # Cache the binary sequence portion result
-            self.mult_cache[m] = (0, bin_cost, False, bin_instrs)
+            self.mult_cache.insert(m, 0, bin_cost, False, bin_instrs)
 
             # Now tack on the instructions that got us to this point,
             # and pretend this is the cached value. We may
@@ -450,21 +400,18 @@ class MultConst:
         candidate_cost = instruction_sequence_cost(candidate_instrs)
         if candidate_cost >= upper:
             # We have another cutoff
-            if self.cache_lookup(n)[-1] != candidate_instrs:
+            if self.mult_cache.lookup(n)[-1] != candidate_instrs:
                 if self.debug:
                     print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
                     pass
-                self.mult_cache[n] = (
-                    upper,
-                    candidate_cost,
-                    upper == candidate_cost,
-                    candidate_instrs,
+                self.mult_cache.insert(
+                    n, upper, candidate_cost, upper == candidate_cost, candidate_instrs
                 )
                 upper = candidate_cost
                 pass
             pass
         else:
-            self.mult_cache[n] = (upper, upper, True, candidate_instrs)
+            self.mult_cache.insert(n, upper, upper, True, candidate_instrs)
             pass
         return upper, candidate_instrs
 
@@ -491,6 +438,6 @@ if __name__ == "__main__":
         min_cost, instrs = m.binary_sequence(n)
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)
-        m.dump_mult_cache()
-        m.check_mult_cache()
-        # m.clear_mult_cache()
+        m.mult_cache.dump()
+        m.mult_cache.check()
+        # m.mult_cache.clear()
