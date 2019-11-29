@@ -85,13 +85,15 @@ def print_instructions(
 
 def check_instruction_sequence_value(n: int, instrs: List[Instruction]) -> None:
     actual_value = instruction_sequence_value(instrs)
-    assert n == actual_value, f"{instrs} value is {actual_value}; should be {n}"
+    assert (
+        n == actual_value
+    ), f"{instrs} value for {n} is {actual_value}; expecting {n}"
     return
 
 
 def check_instruction_sequence_cost(cost: float, instrs: List[Instruction]) -> None:
     actual_cost = instruction_sequence_cost(instrs)
-    assert cost == actual_cost, f"{instrs} cost is {actual_cost}; should be {cost}"
+    assert cost == actual_cost, f"{instrs} cost is {actual_cost}; expecting {cost}"
     return
 
 

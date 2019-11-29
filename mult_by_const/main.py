@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from typing import List, Tuple, Dict, Any
 from sys import maxsize
+from copy import deepcopy
 
 from mult_by_const.instruction import (
     check_instruction_sequence_cost,
@@ -9,6 +10,7 @@ from mult_by_const.instruction import (
     Instruction,
     print_instructions,
     instruction_sequence_cost,
+    instruction_sequence_value,
 )
 
 from mult_by_const.util import (
@@ -84,8 +86,7 @@ class MultConst:
                 check_instruction_sequence_cost(upper, instrs)
                 check_instruction_sequence_value(num, instrs)
             else:
-                assert lower <= upper
-                assert instruction_sequence_cost(instrs) >= lower
+                assert lower <= instruction_sequence_cost(instrs) <= upper
         return
 
     def clear_mult_cache(self) -> None:
@@ -98,6 +99,7 @@ class MultConst:
     def dump_mult_cache(self) -> None:
         """Dump the instruction cache accumulated.
         """
+        # FIXME: compute field widths dynamically
         for num in sorted(self.mult_cache.keys()):
             lower, upper, finished, instrs = self.mult_cache[num]
             upper_any: Any = upper
@@ -109,7 +111,7 @@ class MultConst:
             else:
                 cache_str = f"cost: ({lower},{upper_any:4}]"
                 assert upper >= lower
-            print(f"{num:3}: {cache_str};\t{str(instrs)}")
+            print(f"{num:4}: {cache_str};\t{str(instrs)}")
         print("\n")
         print(f"Cache hits (finished):\t\t{self.cache_hits_exact:4}")
         print(f"Cache hits (unfinished):\t{self.cache_hits_partial:4}")
@@ -141,10 +143,11 @@ class MultConst:
         shift_amount: int,  # shift amount used in shift operation
         upper: float,  # cost of a valid instruction sequence
         lower: float,  # cost of instructions seen so far
-        instrs: List[Instruction],  # An instruction sequence with cost "upper"
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
         candidate_instrs: List[
             Instruction
-        ],  # The best current candidate sequencer. It is updated.
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
     ) -> Tuple[float, List[Instruction]]:
         if (n % factor) == 0:
             shift_cost = self.shift_cost(shift_amount)
@@ -155,6 +158,8 @@ class MultConst:
                     print(f"Trying factor {factor}...")
                 try_cost, try_instrs = self.alpha_beta_search(m, upper - lower)
                 if lower + try_cost < upper:
+                    if self.debug:
+                        print(f"factor {factor} update")
                     candidate_instrs = try_instrs + [
                         Instruction("shift", shift_cost, shift_amount)
                     ]
@@ -165,6 +170,51 @@ class MultConst:
                     upper = lower + try_cost
                 pass
             pass
+        return upper, candidate_instrs
+
+    def try_plus_offset(
+        self,
+        n: int,  # Number we are seeking
+        increment: int,  # +1 or -1 for now
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
+    ) -> Tuple[float, List[Instruction]]:
+        op_str = "add" if increment < 0 else "subtract"
+        op_cost = self.op_costs[op_str]
+        try_lower = lower + op_cost
+        if try_lower < upper:
+            n_inc = n + increment
+            if self.debug:
+                print(f"Trying neighbor {n_inc}...")
+                pass
+
+            # FIXME: check cache first!
+            neighbor_cost, neighbor_instrs = self.alpha_beta_search(
+                n_inc, upper - try_lower
+            )
+            try_cost = neighbor_cost + try_lower
+            if try_cost < upper:
+                if self.debug:
+                    print(f"Neighbor {n_inc} update {try_cost} < {upper}.")
+
+                n_instrs = deepcopy(neighbor_instrs)
+                n_instrs.append(Instruction(op_str, op_cost, 1))
+                n_cost = instruction_sequence_cost(n_instrs)
+                self.mult_cache[n] = (n_cost, n_cost, True, n_instrs)
+
+                # Compute the caller's "n" (not the "n" passed here),
+                # by adding on "instrs"
+                candidate_instrs = n_instrs + instrs
+                upper = instruction_sequence_cost(candidate_instrs)
+                caller_n = instruction_sequence_value(candidate_instrs)
+                self.mult_cache[caller_n] = (0, upper, False, candidate_instrs)
+                pass
+
         return upper, candidate_instrs
 
     def binary_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
@@ -323,8 +373,10 @@ class MultConst:
                     # some cost models.
                     self.mult_cache[n] = (upper, upper, True, instrs)
                 else:
-                    upper = cache_upper if cache_upper == maxsize else lower + cache_upper
-                    self.mult_cache[n] = (lower, upper, False, instrs)
+                    cost = (
+                        cache_upper if cache_upper == maxsize else lower + cache_upper
+                    )
+                    self.mult_cache[n] = (lower, cost, False, instrs)
                 if self.debug:
                     print(f"**beta cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
@@ -389,30 +441,28 @@ class MultConst:
             pass
 
         # Try subtracting one
-        glue_cost = self.op_costs["subtract"] + shift_cost
-        try_lower = lower + glue_cost
-        if try_lower < upper:
-            try_cost, try_instrs = self.alpha_beta_search(m - 1, upper - try_lower)
-            if try_cost + try_lower < upper:
-                candidate_instrs = instrs + try_instrs
-                candidate_instrs.append(Instruction("add", self.op_costs["add"], 1))
-                upper = try_cost + try_lower
+        upper, candidate_instrs = self.try_plus_offset(
+            m, -1, upper, lower, instrs, candidate_instrs
+        )
 
         # FIXME: Do the same for "add" as above
 
         candidate_cost = instruction_sequence_cost(candidate_instrs)
         if candidate_cost >= upper:
             # We have another cutoff
-            if self.debug:
-                print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
-
-            self.mult_cache[n] = (
-                upper,
-                candidate_cost,
-                upper == candidate_cost,
-                candidate_instrs,
-            )
-            upper = candidate_cost
+            if self.cache_lookup(n)[-1] != candidate_instrs:
+                if self.debug:
+                    print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
+                    pass
+                self.mult_cache[n] = (
+                    upper,
+                    candidate_cost,
+                    upper == candidate_cost,
+                    candidate_instrs,
+                )
+                upper = candidate_cost
+                pass
+            pass
         else:
             self.mult_cache[n] = (upper, upper, True, candidate_instrs)
             pass
@@ -436,7 +486,8 @@ if __name__ == "__main__":
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    for n in range(340, 344):
+    # for n in range(340, 344):
+    for n in [1706]:
         min_cost, instrs = m.binary_sequence(n)
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)
