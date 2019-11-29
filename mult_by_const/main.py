@@ -197,10 +197,9 @@ class MultConst:
 
         # FIXME allow negative numbers too.
         assert n >= 0, "We handle only positive numbers"
-        if n == 0:
-            return (1, [Instruction("constant 0", 1, 0)])
-        elif n == 1:
-            return (0, [Instruction("noop", 0, 0)])
+        cache_lower, cache_upper, finished, cache_instr = self.mult_cache.lookup(n)
+        if finished:
+            return (cache_upper, cache_instr)
 
         return self.binary_sequence_inner(n)
 
@@ -208,11 +207,11 @@ class MultConst:
         assert n > 0
         orig_n = n
 
-        result: List[Instruction] = []
+        bin_instrs: List[Instruction] = []
         cost: float = 0  # total cost of sequence
         while n > 1:
 
-            n, cost = self.make_odd(n, cost, result)
+            n, cost = self.make_odd(n, cost, bin_instrs)
 
             if n == 1:
                 break
@@ -223,24 +222,27 @@ class MultConst:
             if one_run_count:
                 if "subtract" in self.op_costs and one_run_count > 2:
                     subtract_cost = self.op_costs["subtract"]
-                    result.append(Instruction("subtract", subtract_cost, 1))
+                    bin_instrs.append(Instruction("subtract", subtract_cost, 1))
                     subtract_cost = self.shift_cost(one_run_count)
                     cost += subtract_cost
                     n += 1
                     pass
                 else:
                     add_cost = self.op_costs["add"]
-                    result.append(Instruction("add", add_cost, 1))
+                    bin_instrs.append(Instruction("add", add_cost, 1))
                     cost += add_cost
                     n -= 1
                     pass
                 pass
             pass
 
-        result.reverse()
+        bin_instrs.reverse()
         if self.debug:
             print(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
-        return (cost, result)
+
+        self.mult_cache.insert(orig_n, 0, cost, False, bin_instrs)
+
+        return (cost, bin_instrs)
 
     def find_mult_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
         """Top-level searching routine. Computes binary method upper bound
