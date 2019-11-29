@@ -144,7 +144,7 @@ class MultConst:
                 n_instrs = deepcopy(neighbor_instrs)
                 n_instrs.append(Instruction(op_str, op_cost, 1))
                 n_cost = instruction_sequence_cost(n_instrs)
-                self.mult_cache.insert(n, n_cost, n_cost, True, n_instrs)
+                self.mult_cache.insert_or_update(n, n_cost, n_cost, True, n_instrs)
 
                 # Compute the caller's "n" (not the "n" passed here),
                 # by adding on "instrs"
@@ -158,11 +158,16 @@ class MultConst:
 
     def binary_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
         """Returns the cost and operation sequence using the binary
-        representation of the number.
+        representation of the number, assuming a (mostly empty)
+        multiplication cache. (0 and 1 are always in the cache)
 
-        In this approach, each one bit other than the highest-order
-        one bit is a "shift" by the number of consecutive zeros
-        followed by an addition.
+        If the cache has been populated, it is possible this will pick
+        up a more optimal value from the cache and further reduce the
+        sequence cost.
+
+        In this (noncached) approach, each one bit other than the
+        highest-order one bit is a "shift" by the number of
+        consecutive zeros followed by an addition.
 
         If the number is even and not zero, then there is a final "shift".
 
@@ -181,7 +186,8 @@ class MultConst:
         Examples:
         ---------
 
-        We'll assume cost one for add, subtract, and shift by any amount
+        We'll assume cost one for "add", "subtract", and "shift" by
+        any amount.
 
         number  cost  remarks
         ------  ----  ------
@@ -193,6 +199,7 @@ class MultConst:
         110     3     shift one; add; shift one
         111:    2     shift three; subtract one      - if subtract is available
         111:    4     shift one; add; shift one; add - if subtract is not available
+
         """
 
         # FIXME allow negative numbers too.
@@ -209,7 +216,15 @@ class MultConst:
 
         bin_instrs: List[Instruction] = []
         cost: float = 0  # total cost of sequence
+
         while n > 1:
+
+            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(n)
+            if cache_upper < maxsize:
+                cost += cache_upper
+                cache_instrs.reverse()  # Because we compute in reverse order here
+                bin_instrs += cache_instrs
+                break
 
             n, cost = self.make_odd(n, cost, bin_instrs)
 
@@ -240,7 +255,7 @@ class MultConst:
         if self.debug:
             print(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
 
-        self.mult_cache.insert(orig_n, 0, cost, False, bin_instrs)
+        self.mult_cache.insert_or_update(orig_n, 0, cost, False, bin_instrs)
 
         return (cost, bin_instrs)
 
@@ -256,7 +271,7 @@ class MultConst:
         if cache_upper == maxsize:
             # The binary sequence gives a workable upper bound on the cost
             cache_upper, bin_instrs = self.binary_sequence(n)
-            self.mult_cache.insert(n, 0, cache_upper, False, bin_instrs)
+            self.mult_cache.insert_or_update(n, 0, cache_upper, False, bin_instrs)
 
         cost, instrs = self.alpha_beta_search(n, cache_upper)
         return cost, instrs
@@ -280,7 +295,7 @@ class MultConst:
         you subtract the "lower" value *on entry* than that is the cost of computing "n".
         """
         if self.debug:
-            print(f"\nalpha-beta search for {n} in max cost: {upper}")
+            print(f"\nalpha-beta search for {n} with max cost: {upper}")
 
         # Lowers the cost of the instruction
         # sequence we've seen so far.  This sequence is
@@ -314,10 +329,7 @@ class MultConst:
                     # some cost models.
                     self.mult_cache.insert(n, upper, upper, True, instrs)
                 else:
-                    cost = (
-                        cache_upper if cache_upper == maxsize else lower + cache_upper
-                    )
-                    self.mult_cache.insert(n, lower, cost, False, instrs)
+                    self.mult_cache.update(n, lower=upper)
                 if self.debug:
                     print(f"**beta cutoff for {n} in cost {lower} > {upper}")
                 return maxsize, []
@@ -406,7 +418,7 @@ class MultConst:
                 if self.debug:
                     print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
                     pass
-                self.mult_cache.insert(
+                self.mult_cache.insert_or_update(
                     n, upper, candidate_cost, upper == candidate_cost, candidate_instrs
                 )
                 upper = candidate_cost
@@ -422,6 +434,11 @@ class MultConst:
 
 if __name__ == "__main__":
     m = MultConst()
+    # cost, instrs = m.binary_sequence(340)
+    # m.mult_cache.dump()
+    # cost, instrs = m.binary_sequence(341)
+    # m.mult_cache.dump()
+
     # for n in list(range(9)) + [53, 93]:
     #     cost, instrs = m.binary_sequence(n)
     #     print_instructions(instrs, n, cost)
@@ -435,8 +452,8 @@ if __name__ == "__main__":
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    # for n in range(340, 344):
-    for n in [1706]:
+    # for n in [1706]:
+    for n in range(340, 344):
         min_cost, instrs = m.binary_sequence(n)
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)

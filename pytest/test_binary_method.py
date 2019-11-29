@@ -1,6 +1,7 @@
 from mult_by_const import MultConst, print_instructions
 import os
 
+
 def test_binary_method():
     debug = "DEBUG" in os.environ
     m = MultConst(debug=debug)
@@ -20,6 +21,7 @@ def test_binary_method():
         if debug:
             print_instructions(result, n, cost)
         assert expect == cost, f"cost({n}) = {cost}; expected it to be {expect}."
+
 
 # If run as standalone
 if __name__ == "__main__":

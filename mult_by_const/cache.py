@@ -1,4 +1,5 @@
 """A multiplication-sequence cache module"""
+from copy import deepcopy
 from sys import maxsize
 from typing import List, Tuple, Dict, Any
 
@@ -27,7 +28,7 @@ class MultCache:
                 assert lower == upper
                 check_instruction_sequence_cost(upper, instrs)
                 check_instruction_sequence_value(num, instrs)
-            else:
+            elif instrs:
                 assert lower <= instruction_sequence_cost(instrs) <= upper
         return
 
@@ -103,16 +104,20 @@ class MultCache:
         result has been fully only searched if if the lower bound is equal to the
         upper bound.
         """
-        cache_lower, cache_upper, finished, cache_instr = self.cache.get(
+        cache_lower, cache_upper, finished, cache_instrs = self.cache.get(
             n, (0, maxsize, False, [])
         )
         if finished:
             self.hits_exact += 1
-        elif cache_upper == maxsize:
+        elif n not in self.cache:
             self.misses += 1
         else:
+            # FIXME: should we split out the case where there is *no*
+            # information, but key has been seen as opposed to the
+            # case where there not *complete* information?
             self.hits_partial += 1
-        return cache_lower, cache_upper, finished, cache_instr
+        self.cache[n] = (cache_lower, cache_upper, finished, cache_instrs)
+        return cache_lower, cache_upper, finished, deepcopy(cache_instrs)
 
     def update(
         self,
@@ -128,11 +133,9 @@ class MultCache:
 
         See also "insert" or "insert_or_update"
         """
-        if n not in self.cache:
-            # Give a warning?
-            return
-
-        cache_lower, cache_upper, cache_finished, cache_instr = self.cache[n]
+        cache_lower, cache_upper, cache_finished, cache_instrs = self.cache.get(
+            n, (0, maxsize, False, [])
+        )
         worse = True
 
         # FIXME: Give warnings for any of the below?
