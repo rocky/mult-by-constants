@@ -13,10 +13,11 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 
 @click.command()
 @click.option(
-    "--showcache/--no-showcache", default=False, help="Show multiplication cache."
+    "--showcache/--no-showcache", "-S", default=False, help="Show multiplication cache."
 )
 @click.option(
     "--debug/--no-debug",
+    "-d",
     default=False,
     help="Add trace output in multiplication-sequence searching.",
 )

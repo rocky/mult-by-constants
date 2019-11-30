@@ -30,6 +30,8 @@ class Instruction:
         elif self.op in ("add", "subtract"):
             operand = "(n)" if self.amount == FACTOR_FLAG else "1"
             return f"{op_str}{operand}"
+        elif self.op == "noop":
+            return f"{op_str}"
         else:
             return f"{op_str} {self.amount}"
 
@@ -66,7 +68,7 @@ def print_instructions(
             i += 1 if instr.amount == 1 else j
         elif instr.op == "subtract":
             i -= 1 if instr.amount == 1 else j
-        elif instr.op == "constant 0":
+        elif instr.op == "constant":
             pass
         elif instr.op == "noop":
             pass
@@ -121,7 +123,7 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
                 i -= 1
             else:
                 i -= j
-        elif instr.op == "constant 0":
+        elif instr.op == "constant":
             return 0
         elif instr.op == "noop":
             pass

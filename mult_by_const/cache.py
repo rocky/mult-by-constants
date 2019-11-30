@@ -37,7 +37,7 @@ class MultCache:
         The inital state, has constants 0 and 1 preloaded.
         """
         self.cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {
-            0: (1, 1, True, [Instruction("constant 0", 1, 0)]),
+            0: (1, 1, True, [Instruction("constant", 1, 0)]),
             1: (0, 0, True, [Instruction("noop", 0, 0)]),
         }
         # The following help with search statistics
