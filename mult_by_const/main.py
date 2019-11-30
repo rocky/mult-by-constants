@@ -409,7 +409,10 @@ class MultConst:
             m, -1, upper, lower, instrs, candidate_instrs
         )
 
-        # FIXME: Do the same for "add" as above
+        # Try adding one
+        upper, candidate_instrs = self.try_plus_offset(
+            m, +1, upper, lower, instrs, candidate_instrs
+        )
 
         candidate_cost = instruction_sequence_cost(candidate_instrs)
         if candidate_cost >= upper:
@@ -453,7 +456,7 @@ if __name__ == "__main__":
     # print_instructions(instrs, n, cost)
 
     # for n in [1706]:
-    for n in range(340, 344):
+    for n in [170, 1706] + list(range(340, 345)):
         min_cost, instrs = m.binary_sequence(n)
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)
