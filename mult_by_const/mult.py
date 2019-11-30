@@ -17,7 +17,7 @@ from mult_by_const.util import (
     default_shift_cost,
 )
 
-from mult_by_const.cache import (MultCache, inf_cost)
+from mult_by_const.cache import MultCache, inf_cost
 
 
 class MultConst:
@@ -31,7 +31,7 @@ class MultConst:
     }
 
     def __init__(
-        self, op_costs=OP_COSTS_DEFAULT, debug=True, shift_cost_fn=default_shift_cost
+        self, op_costs=OP_COSTS_DEFAULT, debug=False, shift_cost_fn=default_shift_cost
     ):
 
         # Op_costs gives costs of using each kind of instruction.
@@ -55,7 +55,19 @@ class MultConst:
         # and "beta" with the different types of cutoffs.
         self.mult_cache = MultCache()
 
+        if debug:
+            # We use indent show nesting in debug output
+            self.indent = 0
         self.debug = debug
+
+    def dedent(self) -> None:
+        if self.debug:
+            self.indent -= 2
+
+    def debug_msg(self, s: str, relative_indent=0) -> None:
+        print(f"{' '*self.indent}{s}")
+        if relative_indent:
+            self.indent += relative_indent
 
     def make_odd(
         self, n: int, cost: float, result: List[Instruction]
@@ -93,11 +105,11 @@ class MultConst:
             if lower < upper:
                 m = n // factor
                 if self.debug:
-                    print(f"Trying factor {factor}...")
+                    self.debug_msg(f"Trying factor {factor}...")
                 try_cost, try_instrs = self.alpha_beta_search(m, upper - lower)
                 if lower + try_cost < upper:
                     if self.debug:
-                        print(f"factor {factor} update")
+                        self.debug_msg(f"factor {factor} update")
                     candidate_instrs = try_instrs + [
                         Instruction("shift", shift_cost, shift_amount)
                     ]
@@ -128,17 +140,17 @@ class MultConst:
         if try_lower < upper:
             n_inc = n + increment
             if self.debug:
-                print(f"Trying neighbor {n_inc}...")
+                self.debug_msg(f"Trying neighbor {n_inc} of {n}...")
                 pass
 
-            # FIXME: check cache first!
             neighbor_cost, neighbor_instrs = self.alpha_beta_search(
                 n_inc, upper - try_lower
             )
+
             try_cost = neighbor_cost + try_lower
             if try_cost < upper:
                 if self.debug:
-                    print(f"Neighbor {n_inc} update {try_cost} < {upper}.")
+                    self.debug_msg(f"Neighbor {n_inc} update {try_cost} < {upper}.")
 
                 n_instrs = deepcopy(neighbor_instrs)
                 n_instrs.append(Instruction(op_str, op_cost, 1))
@@ -252,7 +264,7 @@ class MultConst:
 
         bin_instrs.reverse()
         if self.debug:
-            print(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
+            self.debug_msg(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
 
         self.mult_cache.insert_or_update(orig_n, 0, cost, False, bin_instrs)
 
@@ -294,7 +306,7 @@ class MultConst:
         you subtract the "lower" value *on entry* than that is the cost of computing "n".
         """
         if self.debug:
-            print(f"\nalpha-beta search for {n} with max cost: {upper}")
+            self.debug_msg(f"alpha-beta search for {n} with max cost: {upper}", 2)
 
         # Lowers the cost of the instruction
         # sequence we've seen so far.  This sequence is
@@ -309,6 +321,7 @@ class MultConst:
 
         cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(n)
         if finished:
+            self.dedent()
             return upper, cache_instrs
 
         instrs: List[Instruction] = []
@@ -330,7 +343,7 @@ class MultConst:
                 else:
                     self.mult_cache.update(n, lower=upper)
                 if self.debug:
-                    print(f"**beta cutoff for {n} in cost {lower} > {upper}")
+                    self.debug_msg(f"**beta cutoff for {n} in cost {lower} > {upper}", -2)
                 return inf_cost, []
 
             cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(m)
@@ -346,12 +359,13 @@ class MultConst:
                     # Update cache bounds for n, which includes the "shift"
                     print(f"XXX 2 {try_upper} < {upper}")
                     upper = try_upper
-                    self.mult_cache(n, lower, upper, False, cache_instrs)
+                    self.mult_cache.insert_or_update(n, lower, upper, False, cache_instrs)
                 else:
                     print(f"XXX {try_upper} >= {upper}")
 
                 # Return what we got. The caller level may discard this
                 # either immediately or eventually.
+                self.dedent()
                 return upper, cache_instrs
             pass
 
@@ -418,7 +432,7 @@ class MultConst:
             # We have another cutoff
             if self.mult_cache.lookup(n)[-1] != candidate_instrs:
                 if self.debug:
-                    print(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
+                    self.debug_msg(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
                     pass
                 self.mult_cache.insert_or_update(
                     n, upper, candidate_cost, upper == candidate_cost, candidate_instrs
@@ -429,13 +443,15 @@ class MultConst:
         else:
             self.mult_cache.insert(n, upper, upper, True, candidate_instrs)
             pass
+
+        self.dedent()
         return upper, candidate_instrs
 
     pass
 
 
 if __name__ == "__main__":
-    m = MultConst()
+    m = MultConst(debug=True)
     # cost, instrs = m.binary_sequence(340)
     # m.mult_cache.dump()
     # cost, instrs = m.binary_sequence(341)
