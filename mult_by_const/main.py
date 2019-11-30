@@ -21,20 +21,24 @@ program = os.path.splitext(os.path.basename(__file__))[0]
     default=False,
     help="Add trace output in multiplication-sequence searching.",
 )
-@click.version_option(version=VERSION)
-@click.argument(
-    "numbers",
-    nargs=-1,
-    type=int,
-    required=True,
+@click.option(
+    "--binary-method/--no-binary-method",
+    "-b",
+    default=False,
+    help="Use binary method instead of searching.",
 )
-def main(showcache, debug, numbers):
+@click.version_option(version=VERSION)
+@click.argument("numbers", nargs=-1, type=int, required=True)
+def main(showcache, binary_method, debug, numbers):
     """Searches for short sequences of shift, add, subtract instruction to compute multiplication
     by a constant.
     """
     mult = MultConst(debug=debug)
     for number in numbers:
-        cost, instrs = mult.find_mult_sequence(number)
+        if binary_method:
+            cost, instrs = mult.binary_sequence(number)
+        else:
+            cost, instrs = mult.find_mult_sequence(number)
         print_instructions(instrs, number, cost)
         pass
     if showcache:
