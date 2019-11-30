@@ -1,6 +1,6 @@
 """A multiplication-sequence cache module"""
 from copy import deepcopy
-from sys import maxsize
+from sys import maxsize as inf_cost
 from typing import List, Tuple, Dict, Any
 
 from mult_by_const.instruction import (
@@ -53,7 +53,7 @@ class MultCache:
             lower, upper, finished, instrs = self.cache[num]
 
             upper_any: Any = upper
-            if upper == maxsize:
+            if upper == inf_cost:
                 upper_any = "inf"
             if finished:
                 cache_str = f"cost: {upper_any:7}"
@@ -105,7 +105,7 @@ class MultCache:
         upper bound.
         """
         cache_lower, cache_upper, finished, cache_instrs = self.cache.get(
-            n, (0, maxsize, False, [])
+            n, (0, inf_cost, False, [])
         )
         if finished:
             self.hits_exact += 1
@@ -134,7 +134,7 @@ class MultCache:
         See also "insert" or "insert_or_update"
         """
         cache_lower, cache_upper, cache_finished, cache_instrs = self.cache.get(
-            n, (0, maxsize, False, [])
+            n, (0, inf_cost, False, [])
         )
         worse = True
 

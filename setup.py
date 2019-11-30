@@ -14,7 +14,7 @@ setup(
        author_email       = author_email,
        classifiers        = classifiers,
        description        = short_desc,
-       # entry_points       = entry_points,
+       entry_points       = entry_points,
        license            = license,
        long_description   = long_description,
        long_description_content_type = 'text/markdown',

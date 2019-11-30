@@ -1,4 +1,4 @@
-"""xdis packaging information"""
+"""mult_by_const packaging information"""
 
 # To the extent possible we make this file look more like a
 # configuration file rather than code like setup.py. I find putting
@@ -12,15 +12,12 @@ copyright = """
 Copyright (C) 2019 Rocky Bernstein <rb@dustyfeet.com>.
 """
 
-classifiers = [
-    "Programming Language :: Python :: 3.8",
-]
+classifiers = ["Programming Language :: Python :: 3.8"]
 
 # The rest in alphabetic order
 author = "Rocky Bernstein"
 author_email = "rb@dustyfeet.com"
-# entry_points = {"console_scripts": ["pydisasm=mult_by_const.bin.pydisasm:main"]}
-entry_points = {}
+entry_points = {"console_scripts": ["mult-by-const=mult_by_const.main:main"]}
 ftp_url = None
 install_requires = ["click"]
 license = "GPL-3"
