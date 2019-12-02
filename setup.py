@@ -2,10 +2,10 @@
 """Setup script for the 'mult-by-constants' distribution."""
 
 from __pkginfo__ import \
-    author,           author_email,       entry_points, \
+    author,           author_email,       entry_points, install_requires, \
     license,          long_description,   classifiers,               \
     modname,          py_modules,         \
-    short_desc,         tests_require,             \
+    short_desc,       tests_require,             \
     VERSION,          web,                zip_safe
 
 from setuptools import setup, find_packages
@@ -15,6 +15,7 @@ setup(
        classifiers        = classifiers,
        description        = short_desc,
        entry_points       = entry_points,
+       install_requires   = install_requires,
        license            = license,
        long_description   = long_description,
        long_description_content_type = 'text/markdown',

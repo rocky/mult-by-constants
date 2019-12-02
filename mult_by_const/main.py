@@ -27,9 +27,20 @@ program = os.path.splitext(os.path.basename(__file__))[0]
     default=False,
     help="Use binary method instead of searching.",
 )
+@click.option(
+    "--fmt",
+    type=click.Choice(["text", "json", "yaml"]),
+    default="text",
+    help="Format, JSON, YAML, or text, to use in dumping multiplication cache.",
+)
+@click.option(
+    "--compact/--no-compact",
+    default=False,
+    help="Show cache in compact format.",
+)
 @click.version_option(version=VERSION)
 @click.argument("numbers", nargs=-1, type=int, required=True)
-def main(showcache, binary_method, debug, numbers):
+def main(showcache, debug, binary_method, fmt, compact, numbers):
     """Searches for short sequences of shift, add, subtract instruction to compute multiplication
     by a constant.
     """
@@ -39,10 +50,18 @@ def main(showcache, binary_method, debug, numbers):
             cost, instrs = mult.binary_sequence(number)
         else:
             cost, instrs = mult.find_mult_sequence(number)
+
         print_instructions(instrs, number, cost)
         pass
     if showcache:
-        mult.mult_cache.dump()
+        if fmt == "text":
+            mult.mult_cache.dump()
+        elif fmt == "yaml":
+            mult.mult_cache.dump_yaml(compact=compact)
+        else:
+            assert fmt == "json"
+            indent = None if compact else 2
+            mult.mult_cache.dump_json(indent=indent)
 
     return
 

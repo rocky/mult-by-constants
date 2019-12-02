@@ -19,7 +19,11 @@ author = "Rocky Bernstein"
 author_email = "rb@dustyfeet.com"
 entry_points = {"console_scripts": ["mult-by-const=mult_by_const.main:main"]}
 ftp_url = None
-install_requires = ["click"]
+
+#  click: for command-line options
+#  ruamel: For YAML output
+install_requires = ["click", "ruamel.yaml"]
+
 license = "GPL-3"
 modname = "mult_by_const"
 py_modules = None

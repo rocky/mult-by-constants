@@ -1,6 +1,9 @@
 """A multiplication-sequence cache module"""
 from copy import deepcopy
+import json
+import sys
 from sys import maxsize as inf_cost
+from ruamel.yaml import YAML
 from typing import List, Tuple, Dict, Any
 
 from mult_by_const.instruction import (
@@ -44,6 +47,35 @@ class MultCache:
         self.hits_exact = 0
         self.hits_partial = 0
         self.misses = 0
+
+    def reformat_cache(self) -> Dict[int, Any]:
+        """Reorganize the instruction cache in a more machine-readable format"
+        """
+        table: Dict[int, Any] = {}
+        for num in sorted(self.cache.keys()):
+            lower, upper, finished, instrs = self.cache[num]
+            if instrs:
+                table[num] = {
+                    "cost": upper,
+                    "finished": "search-complete" if finished else "upper-bound",
+                    "sequence": str(instrs)
+                    }
+                pass
+            pass
+        return table
+
+    def dump_yaml(self, compact=False) -> None:
+        table = self.reformat_cache()
+        yaml = YAML()
+        if compact:
+            yaml.compact(seq_seq=False, seq_map=False)
+        else:
+            yaml.explicit_start = True
+        yaml.dump(table, sys.stdout)
+
+    def dump_json(self, indent=2) -> None:
+        table = self.reformat_cache()
+        print(json.dumps(table, sort_keys=True, indent=indent))
 
     def dump(self) -> None:
         """Dump the instruction cache accumulated.
@@ -154,4 +186,8 @@ class MultCache:
 if __name__ == "__main__":
     c = MultCache()
     assert sorted(c.cache.keys()) == [0, 1]
-    c.insert(0, 1, 1, True, [Instruction("constant 0", 1, 0)])
+    c.insert(0, 1, 1, True, [Instruction("constant", 1, 0)])
+    c.insert_or_update(1, 0, 0, True, [Instruction("noop", 0, 0)])
+    c.dump()
+    c.check()
+    c.dump_yaml()
