@@ -81,7 +81,7 @@ class MultConst:
         if shift_amount:
             shift_cost = self.shift_cost(shift_amount)
             cost += shift_cost
-            result.append(Instruction("shift", shift_cost, shift_amount))
+            result.append(Instruction("shift", shift_amount, shift_cost))
             pass
         return (n, cost)
 
@@ -111,10 +111,10 @@ class MultConst:
                     if self.debug:
                         self.debug_msg(f"factor {factor} update")
                     candidate_instrs = try_instrs + [
-                        Instruction("shift", shift_cost, shift_amount)
+                        Instruction("shift", shift_amount, shift_cost)
                     ]
                     candidate_instrs.append(
-                        Instruction(op, self.op_costs[op], FACTOR_FLAG)
+                        Instruction(op, FACTOR_FLAG, self.op_costs[op])
                     )
                     candidate_instrs = candidate_instrs + instrs
                     upper = lower + try_cost
@@ -153,7 +153,7 @@ class MultConst:
                     self.debug_msg(f"Neighbor {n_inc} update {try_cost} < {upper}.")
 
                 n_instrs = deepcopy(neighbor_instrs)
-                n_instrs.append(Instruction(op_str, op_cost, 1))
+                n_instrs.append(Instruction(op_str, 1, op_cost))
                 n_cost = instruction_sequence_cost(n_instrs)
                 self.mult_cache.insert_or_update(n, n_cost, n_cost, True, n_instrs)
 
@@ -248,14 +248,14 @@ class MultConst:
             if one_run_count:
                 if "subtract" in self.op_costs and one_run_count > 2:
                     subtract_cost = self.op_costs["subtract"]
-                    bin_instrs.append(Instruction("subtract", subtract_cost, 1))
+                    bin_instrs.append(Instruction("subtract", 1, subtract_cost))
                     subtract_cost = self.shift_cost(one_run_count)
                     cost += subtract_cost
                     n += 1
                     pass
                 else:
                     add_cost = self.op_costs["add"]
-                    bin_instrs.append(Instruction("add", add_cost, 1))
+                    bin_instrs.append(Instruction("add", 1, add_cost))
                     cost += add_cost
                     n -= 1
                     pass

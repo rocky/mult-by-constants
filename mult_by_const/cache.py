@@ -1,9 +1,6 @@
 """A multiplication-sequence cache module"""
 from copy import deepcopy
-import json
-import sys
 from sys import maxsize as inf_cost
-from ruamel.yaml import YAML
 from typing import List, Tuple, Dict, Any
 
 from mult_by_const.instruction import (
@@ -13,14 +10,29 @@ from mult_by_const.instruction import (
     instruction_sequence_cost,
 )
 
-from mult_by_const.util import print_sep
-
-
-class MultCache:
+class MultCache():
     """A multiplication-sequence cache object"""
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.clear()
+
+    def keys(self):
+        return self.cache.keys()
+
+    def values(self):
+        return self.cache.values()
+
+    def items(self):
+        return self.cache.items()
+
+    def __len__(self):
+        return len(self.cache)
+
+    def has_key(self, k):
+        return k in self.cache
+
+    # There is also get(), clear(), detdefault(), pop() popitem(), copy()
+    # pop, __cmp__, __contains__,
 
     def check(self) -> None:
         # We do sorted so that in the future we can compare
@@ -39,67 +51,16 @@ class MultCache:
         """Reset the multiplication cache, and cache statistics to an initial state.
         The inital state, has constants 0 and 1 preloaded.
         """
+        # Dictionaries keys in Python 3.8+ are in given in insertion order,
+        # so we should insert 0 before 1.
         self.cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {
-            0: (1, 1, True, [Instruction("constant", 1, 0)]),
+            0: (1, 1, True, [Instruction("constant", 0)]),
             1: (0, 0, True, [Instruction("noop", 0, 0)]),
         }
         # The following help with search statistics
         self.hits_exact = 0
         self.hits_partial = 0
         self.misses = 0
-
-    def reformat_cache(self) -> Dict[int, Any]:
-        """Reorganize the instruction cache in a more machine-readable format"
-        """
-        table: Dict[int, Any] = {}
-        for num in sorted(self.cache.keys()):
-            lower, upper, finished, instrs = self.cache[num]
-            if instrs:
-                table[num] = {
-                    "cost": upper,
-                    "finished": "search-complete" if finished else "upper-bound",
-                    "sequence": str(instrs)
-                    }
-                pass
-            pass
-        return table
-
-    def dump_yaml(self, compact=False) -> None:
-        table = self.reformat_cache()
-        yaml = YAML()
-        if compact:
-            yaml.compact(seq_seq=False, seq_map=False)
-        else:
-            yaml.explicit_start = True
-        yaml.dump(table, sys.stdout)
-
-    def dump_json(self, indent=2) -> None:
-        table = self.reformat_cache()
-        print(json.dumps(table, sort_keys=True, indent=indent))
-
-    def dump(self) -> None:
-        """Dump the instruction cache accumulated.
-        """
-        # FIXME: compute field widths dynamically
-        for num in sorted(self.cache.keys()):
-            lower, upper, finished, instrs = self.cache[num]
-
-            upper_any: Any = upper
-            if upper == inf_cost:
-                upper_any = "inf"
-            if finished:
-                cache_str = f"cost: {upper_any:7}"
-                assert upper == lower
-            else:
-                cache_str = f"cost: ({lower},{upper_any:4}]"
-                assert upper >= lower
-            print(f"{num:4}: {cache_str};\t{str(instrs)}")
-        print("\n")
-        print(f"Cache hits (finished):\t\t{self.hits_exact:4}")
-        print(f"Cache hits (unfinished):\t{self.hits_partial:4}")
-        print(f"Cache misses:\t\t\t{self.misses:4}")
-        print_sep()
-        return
 
     def insert(
         self,
@@ -185,9 +146,10 @@ class MultCache:
 
 if __name__ == "__main__":
     c = MultCache()
-    assert sorted(c.cache.keys()) == [0, 1]
-    c.insert(0, 1, 1, True, [Instruction("constant", 1, 0)])
+    # Note: dictionaries keys in Python 3.8+ are in given in insertion order.
+    assert list(c.keys()) == [0, 1], "We should have at least 0 and 1"
+    c.insert(0, 1, 1, True, [Instruction("constant", 0, 1)])
     c.insert_or_update(1, 0, 0, True, [Instruction("noop", 0, 0)])
-    c.dump()
-    c.check()
-    c.dump_yaml()
+    # c.dump()
+    # c.check()
+    # c.dump_yaml()

@@ -8,7 +8,7 @@ def test_factor():
     n = 27
     bin_cost, bin_instrs = m.binary_sequence(n)
     if debug:
-        print_instructions(result, n, bin_cost)
+        print_instructions(bin_instrs, n, bin_cost)
     result = []
 
     cost, instrs = m.try_shift_op_factor(n, 5, "add", 2, bin_cost, 0, [], bin_instrs)

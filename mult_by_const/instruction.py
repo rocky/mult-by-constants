@@ -5,13 +5,14 @@ from mult_by_const.util import bin2str, print_sep
 FACTOR_FLAG = -1
 
 OP2SHORT = {"add": "+", "subtract": "-", "shift": "<<"}
+SHORT2OP = {v:k for k, v in OP2SHORT.items()}
 
 
 class Instruction:
     """Object containing information about a particular operation or instruction as it pertains
     to the instruction sequence"""
 
-    def __init__(self, op: str, cost: float, amount: int):
+    def __init__(self, op: str, amount: int, cost: float = 1):
         self.op = op  # The name of the operation; e.g. "shift", "add", "subtract"
 
         # "cost" is redundant and can be computed from the "op" and "amount";
@@ -43,7 +44,6 @@ class Instruction:
             op_str = f"{self.op}({self.amount})"
         op_str += ","
         return f"op: {op_str:12}\tcost: {self.cost:2}"
-
 
 def print_instructions(
     instrs: List[Instruction], n=None, expected_cost=None, prefix=""
@@ -133,13 +133,34 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
 
     return i
 
+def str2instruction(s: str) -> Instruction:
+    op_str = s[0:1]
+    if op_str in ("+", "-"):
+        amount = 1 if s[1:2] == "1" else FACTOR_FLAG
+        op = SHORT2OP[op_str]
+    else:
+        op_str = s[0:2]
+        if op_str == "<<":
+            amount = int(s[2:], 10)
+            op = SHORT2OP[op_str]
+        else:
+            op_str, val_str = s.split(" ")
+            assert op_str in ("constant", "noop")
+            op = op_str
+            amount = int(val_str)
+    return Instruction(op, amount)
+
+def str2instructions(s: str) -> List[Instruction]:
+    assert s[0:1] == "[" and s[-1:] == "]"
+    instr_strs = s[1:-1].split(", ")
+    return [str2instruction(inst_str) for inst_str in instr_strs]
 
 if __name__ == "__main__":
     instrs = [
-        Instruction("shift", 1, 4),
-        Instruction("add", 1, 1),
-        Instruction("shift", 1, 2),
-        Instruction("subtract", 1, FACTOR_FLAG),
+        Instruction("shift", 4),
+        Instruction("add", 1),
+        Instruction("shift", 2),
+        Instruction("subtract", FACTOR_FLAG),
     ]
     print(instrs)
     for inst in instrs:
@@ -148,3 +169,8 @@ if __name__ == "__main__":
     print(
         f"Instruction value: {instruction_sequence_value(instrs)}, cost: {instruction_sequence_cost(instrs)}"
     )
+    for inst in instrs:
+        roundtrip_inst = str2instruction(repr(inst))
+        print(f"inst: {repr(inst)}, str: {repr(roundtrip_inst)}")
+        assert repr(inst) == repr(roundtrip_inst)
+        print(str2instructions("[<< 4, +1, << 2, -(n)]"))
