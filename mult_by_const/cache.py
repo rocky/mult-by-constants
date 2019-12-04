@@ -24,6 +24,9 @@ class MultCache:
         self.costs = op_costs
         self.clear()
 
+    def __getitem__(self, key):
+        return self.cache[key]
+
     def keys(self):
         return self.cache.keys()
 

@@ -17,7 +17,7 @@ def dump_yaml(cache: MultCache, out_fd=sys.stdout, compact=False) -> None:
     if compact:
         yaml.compact(seq_seq=False, seq_map=False)
     else:
-        yaml.explicit_start = True
+        yaml.explicit_start = True  # type: ignore
     yaml.dump(table, out_fd)
 
 def dump_json(cache: MultCache, out_fd=sys.stdout, indent=2) -> None:
@@ -81,10 +81,10 @@ def load_yaml(fd, cache=MultCache()) -> MultCache:
     mcache.check()
     return mcache
 
-def reformat_cache(cache: MultCache) -> Dict[int, Any]:
+def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
     """Reorganize the instruction cache in a more machine-readable format"
     """
-    table: Dict[str: Any, Dict[int, Any]] = {
+    table: Dict[str, Dict[int, Any]] = {
         "version": cache.version,
         "costs": cache.costs,
         "products": {}

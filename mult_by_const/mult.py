@@ -303,6 +303,7 @@ class MultConst:
         don't return the cost of computing "n", but rather of the total sequence. If
         you subtract the "lower" value *on entry* than that is the cost of computing "n".
         """
+
         if self.debug:
             self.debug_msg(f"alpha-beta search for {n} with max cost: {upper}", 2)
 
@@ -362,8 +363,6 @@ class MultConst:
                     self.mult_cache.insert_or_update(
                         n, lower, upper, False, cache_instrs
                     )
-                else:
-                    print(f"XXX {try_upper} >= {upper}")
 
                 # Return what we got. The caller level may discard this
                 # either immediately or eventually.
@@ -455,31 +454,27 @@ class MultConst:
 
 
 if __name__ == "__main__":
-    m = MultConst(debug=True)
+    from mult_by_const.instruction import print_instructions
+    from mult_by_const.io import dump
+
+    # m = MultConst(debug=True)
     # cost, instrs = m.binary_sequence(340)
-    # m.mult_cache.dump()
-    # cost, instrs = m.binary_sequence(341)
-    # m.mult_cache.dump()
-
-    # for n in list(range(9)) + [53, 93]:
-    #     cost, instrs = m.binary_sequence(n)
-    #     print_instructions(instrs, n, cost)
-
-    # n = 27
-    # min_cost, bin_instrs = m.binary_sequence(n)
     # cost, instrs = m.try_shift_op_factor(n, 5, "add", 2, min_cost, 0, [], bin_instrs)
     # assert min_cost == cost, "5 is not a factor of 27, so we keep old min_cost"
-
     # cost, instrs = m.try_shift_op_factor(n, 3, "add", 1, min_cost, 0, [], bin_instrs)
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    # for n in [1706]:
-    from mult_by_const.io import dump
-    for n in [170, 1706] + list(range(340, 345)):
-        min_cost, instrs = m.binary_sequence(n)
-        cost, instrs = m.find_mult_sequence(n)
-        print_instructions(instrs, n, cost)
-        dump(m.mult_cache)
-        m.mult_cache.check()
-        # m.mult_cache.clear()
+    # for n in [170, 1706] + list(range(340, 345)):
+    #     min_cost, instrs = m.binary_sequence(n)
+    #     cost, instrs = m.find_mult_sequence(n)
+    #     print_instructions(instrs, n, cost)
+    #     dump(m.mult_cache)
+    #     m.mult_cache.check()
+    #     # m.mult_cache.clear()
+
+    n = 78
+
+    m = MultConst(debug=True)
+    cost, instrs = m.find_mult_sequence(n)
+    print_instructions(instrs, n, cost)

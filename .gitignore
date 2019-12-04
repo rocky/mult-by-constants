@@ -3,4 +3,5 @@
 /.mypy_cache
 /.python-version
 /mult_by_const.egg-info
+/tmp
 __pycache__
