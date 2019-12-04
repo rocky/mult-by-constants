@@ -1,0 +1,29 @@
+---
+version: 1.0.0
+costs:
+  shift: 1
+  add: 1
+  subtract: 1
+  noop: 0
+  const: 1
+products:
+  0:
+    cost: 1
+    finished: search-complete
+    sequence: '[constant 0]'
+  1:
+    cost: 0
+    finished: search-complete
+    sequence: '[noop]'
+  4:
+    cost: 1
+    finished: search-complete
+    sequence: '[<< 2]'
+  5:
+    cost: 2
+    finished: upper-bound
+    sequence: '[<< 2, +1]'
+  10:
+    cost: 3
+    finished: search-complete
+    sequence: '[<< 2, +1, << 1]'

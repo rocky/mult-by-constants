@@ -52,11 +52,14 @@ def load_json(fd, mcache=MultCache()) -> None:
     mcache.check()
     return mcache
 
-def load_table(table: Dict[int, Any], check_consistency=True, cache=MultCache()) -> MultCache:
+def load_table(table, check_consistency=True, cache=MultCache()) -> MultCache:
     """Reorganize read-in dictionary into the format used internally.
     """
+
+    # FIXME: decide what to do about merging/comparing version and costs
     line = 0
-    for n, value in table.items():
+    products = table["products"]
+    for n, value in products.items():
         d = dict(value)
         line += 1
         for key in ("finished", "cost", "sequence"):
@@ -81,11 +84,16 @@ def load_yaml(fd, cache=MultCache()) -> MultCache:
 def reformat_cache(cache: MultCache) -> Dict[int, Any]:
     """Reorganize the instruction cache in a more machine-readable format"
     """
-    table: Dict[int, Any] = {}
+    table: Dict[str: Any, Dict[int, Any]] = {
+        "version": cache.version,
+        "costs": cache.costs,
+        "products": {}
+    }
+    products = table["products"]
     for num in sorted(cache.keys()):
         lower, upper, finished, instrs = cache.cache[num]
         if instrs:
-            table[num] = {
+            products[num] = {
                 "cost": upper,
                 "finished": "search-complete" if finished else "upper-bound",
                 "sequence": str(instrs),
@@ -97,7 +105,7 @@ def reformat_cache(cache: MultCache) -> Dict[int, Any]:
 
 if __name__ == "__main__":
     import os.path as osp
-    yaml_table = osp.join(osp.dirname(__file__), "..", "pytest", "data", "10-table.yaml")
+    yaml_table = osp.join(osp.dirname(__file__), "..", "pytest", "data", "10-stdcost.yaml")
     mcache = load_yaml(open(yaml_table, "r"))
 
     dump(mcache)

@@ -4,6 +4,8 @@
 from typing import List, Tuple
 from copy import deepcopy
 
+from mult_by_const.costs import OP_COSTS_DEFAULT
+
 from mult_by_const.instruction import (
     FACTOR_FLAG,
     Instruction,
@@ -23,15 +25,6 @@ from mult_by_const.cache import MultCache, inf_cost
 
 
 class MultConst:
-    OP_COSTS_DEFAULT = {
-        "shift": 1,
-        "add": 1,
-        "subtract": 1,
-        "noop": 0,
-        "const": 1,
-        # "shift_add" = 1  # old RISC machines have this
-    }
-
     def __init__(
         self, op_costs=OP_COSTS_DEFAULT, debug=False, shift_cost_fn=default_shift_cost
     ):
@@ -55,7 +48,7 @@ class MultConst:
 
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
-        self.mult_cache = MultCache()
+        self.mult_cache = MultCache(op_costs)
 
         if debug:
             # We use indent show nesting in debug output
@@ -482,10 +475,11 @@ if __name__ == "__main__":
     # print_instructions(instrs, n, cost)
 
     # for n in [1706]:
+    from mult_by_const.io import dump
     for n in [170, 1706] + list(range(340, 345)):
         min_cost, instrs = m.binary_sequence(n)
         cost, instrs = m.find_mult_sequence(n)
         print_instructions(instrs, n, cost)
-        m.mult_cache.dump()
+        dump(m.mult_cache)
         m.mult_cache.check()
         # m.mult_cache.clear()

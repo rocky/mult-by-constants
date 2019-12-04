@@ -4,6 +4,8 @@ from copy import deepcopy
 from sys import maxsize as inf_cost
 from typing import List, Tuple, Dict, Any
 
+from mult_by_const.costs import OP_COSTS_DEFAULT
+
 from mult_by_const.instruction import (
     check_instruction_sequence_cost,
     check_instruction_sequence_value,
@@ -11,11 +13,15 @@ from mult_by_const.instruction import (
     instruction_sequence_cost,
 )
 
+from mult_by_const.version import VERSION
+
 
 class MultCache:
     """A multiplication-sequence cache object"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, op_costs=OP_COSTS_DEFAULT, *args, **kwargs):
+        self.version = VERSION
+        self.costs = op_costs
         self.clear()
 
     def keys(self):
