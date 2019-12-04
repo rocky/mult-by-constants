@@ -1,3 +1,18 @@
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Introduction](#introduction)
+    - [As a library](#as-a-library)
+    - [As a command-line utility](#as-a-command-line-utility)
+    - [Tables](#tables)
+    - [Data Analysis](#data-analysis)
+- [Examples](#examples)
+    - [Instruction Sequences](#instruction-sequences)
+    - [Alpha-beta pruning](#alpha-beta-pruning)
+    - [Cache entries](#cache-entries)
+- [References](#references)
+
+<!-- markdown-toc end -->
 Introduction
 ============
 
