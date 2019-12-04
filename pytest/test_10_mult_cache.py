@@ -10,11 +10,17 @@ def test_mult_cache():
     mconst = MultConst(debug=debug)
 
     for clear_cache in (False, True):
-        for n in range(340, 344):
+        for n in range(2, 52):
             cost, instrs = mconst.find_mult_sequence(n)
             mconst.mult_cache.check()
             if clear_cache:
                 mconst.mult_cache.clear()
+                pass
+            pass
+        if not clear_cache:
+            assert mconst.mult_cache[51][1] == 4, f"for {51} expected cost 4; got {cost}"
+        pass
+    return
 
 
 # If run as standalone

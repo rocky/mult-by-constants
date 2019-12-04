@@ -321,7 +321,7 @@ class MultConst:
         cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(n)
         if finished:
             self.dedent()
-            return upper, cache_instrs
+            return cache_upper, cache_instrs
 
         instrs: List[Instruction] = []
         m, shift_cost = self.make_odd(n, 0, instrs)
@@ -358,7 +358,6 @@ class MultConst:
                 try_upper = lower + cache_upper
                 if try_upper < upper:
                     # Update cache bounds for n, which includes the "shift"
-                    print(f"XXX 2 {try_upper} < {upper}")
                     upper = try_upper
                     self.mult_cache.insert_or_update(
                         n, lower, upper, False, cache_instrs
