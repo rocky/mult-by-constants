@@ -1,3 +1,4 @@
+# Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """Code around instructions and instruction sequences"""
 from typing import List
 from mult_by_const.util import bin2str, print_sep
@@ -143,9 +144,12 @@ def str2instruction(s: str) -> Instruction:
         if op_str == "<<":
             amount = int(s[2:], 10)
             op = SHORT2OP[op_str]
+        elif s == "noop":
+            # Note: need to make cost == 0 explicit
+            return Instruction("noop", 0, 0)
         else:
             op_str, val_str = s.split(" ")
-            assert op_str in ("constant", "noop")
+            assert op_str == "constant"
             op = op_str
             amount = int(val_str)
     return Instruction(op, amount)
@@ -169,6 +173,7 @@ if __name__ == "__main__":
     print(
         f"Instruction value: {instruction_sequence_value(instrs)}, cost: {instruction_sequence_cost(instrs)}"
     )
+
     for inst in instrs:
         roundtrip_inst = str2instruction(repr(inst))
         print(f"inst: {repr(inst)}, str: {repr(roundtrip_inst)}")

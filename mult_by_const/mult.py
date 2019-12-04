@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+# Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
+"""Multiplication sequence searching."""
+
 from typing import List, Tuple
 from copy import deepcopy
 
@@ -264,7 +266,9 @@ class MultConst:
 
         bin_instrs.reverse()
         if self.debug:
-            self.debug_msg(f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}")
+            self.debug_msg(
+                f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}"
+            )
 
         self.mult_cache.insert_or_update(orig_n, 0, cost, False, bin_instrs)
 
@@ -285,6 +289,7 @@ class MultConst:
             self.mult_cache.insert_or_update(n, 0, cache_upper, False, bin_instrs)
 
         cost, instrs = self.alpha_beta_search(n, cache_upper)
+        self.mult_cache.update_field(n, finished=True)
         return cost, instrs
 
     def alpha_beta_search(
@@ -341,9 +346,11 @@ class MultConst:
                     # some cost models.
                     self.mult_cache.insert(n, upper, upper, True, instrs)
                 else:
-                    self.mult_cache.update(n, lower=upper)
+                    self.mult_cache.update_field(n, lower=upper)
                 if self.debug:
-                    self.debug_msg(f"**beta cutoff for {n} in cost {lower} > {upper}", -2)
+                    self.debug_msg(
+                        f"**beta cutoff for {n} in cost {lower} > {upper}", -2
+                    )
                 return inf_cost, []
 
             cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(m)
@@ -359,7 +366,9 @@ class MultConst:
                     # Update cache bounds for n, which includes the "shift"
                     print(f"XXX 2 {try_upper} < {upper}")
                     upper = try_upper
-                    self.mult_cache.insert_or_update(n, lower, upper, False, cache_instrs)
+                    self.mult_cache.insert_or_update(
+                        n, lower, upper, False, cache_instrs
+                    )
                 else:
                     print(f"XXX {try_upper} >= {upper}")
 
@@ -432,7 +441,9 @@ class MultConst:
             # We have another cutoff
             if self.mult_cache.lookup(n)[-1] != candidate_instrs:
                 if self.debug:
-                    self.debug_msg(f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}")
+                    self.debug_msg(
+                        f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}"
+                    )
                     pass
                 self.mult_cache.insert_or_update(
                     n, upper, candidate_cost, upper == candidate_cost, candidate_instrs

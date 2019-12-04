@@ -37,6 +37,8 @@ op: subtract(n),	cost:  1
     assert str(instrs2) == instrs_str
     instrs2_str = "\n".join(str(inst) for inst in instrs2)
     assert expect_str.strip() == instrs2_str
+    assert str2instruction("noop").cost == 0
+
 
 # If run as standalone
 if __name__ == "__main__":

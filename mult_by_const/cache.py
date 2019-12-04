@@ -1,3 +1,4 @@
+# Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """A multiplication-sequence cache module"""
 from copy import deepcopy
 from sys import maxsize as inf_cost
@@ -10,7 +11,8 @@ from mult_by_const.instruction import (
     instruction_sequence_cost,
 )
 
-class MultCache():
+
+class MultCache:
     """A multiplication-sequence cache object"""
 
     def __init__(self, *args, **kwargs):
@@ -31,6 +33,15 @@ class MultCache():
     def has_key(self, k):
         return k in self.cache
 
+    def update(self, *args, **kwargs):
+        return self.cache.update(*args, **kwargs)
+
+    def __contains__(self, item):
+        return item in self.cache
+
+    def __iter__(self):
+        return iter(self.cache)
+
     # There is also get(), clear(), detdefault(), pop() popitem(), copy()
     # pop, __cmp__, __contains__,
 
@@ -40,10 +51,11 @@ class MultCache():
         for num in sorted(self.cache.keys()):
             lower, upper, finished, instrs = self.cache[num]
             if finished:
-                assert lower == upper
                 check_instruction_sequence_cost(upper, instrs)
                 check_instruction_sequence_value(num, instrs)
-            elif instrs:
+                pass
+
+            if instrs:
                 assert lower <= instruction_sequence_cost(instrs) <= upper
         return
 
@@ -112,7 +124,7 @@ class MultCache():
         self.cache[n] = (cache_lower, cache_upper, finished, cache_instrs)
         return cache_lower, cache_upper, finished, deepcopy(cache_instrs)
 
-    def update(
+    def update_field(
         self,
         n: int,
         lower: Any = None,  # FIXME: the below are really Union types
@@ -150,6 +162,4 @@ if __name__ == "__main__":
     assert list(c.keys()) == [0, 1], "We should have at least 0 and 1"
     c.insert(0, 1, 1, True, [Instruction("constant", 0, 1)])
     c.insert_or_update(1, 0, 0, True, [Instruction("noop", 0, 0)])
-    # c.dump()
-    # c.check()
-    # c.dump_yaml()
+    c.check()

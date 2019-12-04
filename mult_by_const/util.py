@@ -1,3 +1,4 @@
+# Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """Miscellaneous small utility routines"""
 from typing import List, Tuple, Dict
 
