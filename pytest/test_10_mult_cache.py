@@ -9,7 +9,7 @@ def test_mult_cache():
     debug = "DEBUG" in os.environ
     mconst = MultConst(debug=debug)
 
-    for clear_cache in (False, ):
+    for clear_cache in (False, True):
         for n in range(340, 344):
             cost, instrs = mconst.find_mult_sequence(n)
             mconst.mult_cache.check()
