@@ -18,6 +18,10 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 
 @click.command()
 @click.option(
+    "--to", type=int, required=False,
+    help="Generate table up to this value."
+)
+@click.option(
     "--showcache/--no-showcache", "-S", default=False, help="Show multiplication cache."
 )
 @click.option(
@@ -43,21 +47,32 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 )
 @click.option("--output", "-o", type=click.File("w"), help="File path to dump cache.")
 @click.version_option(version=VERSION)
-@click.argument("numbers", nargs=-1, type=int, required=True)
-def main(showcache, debug, binary_method, fmt, compact, output, numbers):
+@click.argument("numbers", nargs=-1, type=int)
+def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
     """Searches for short sequences of shift, add, subtract instruction to compute multiplication
     by a constant.
     """
     mult = MultConst(debug=debug)
-    for number in numbers:
-        if binary_method:
-            cost, instrs = mult.binary_sequence(number)
-        else:
-            cost, instrs = mult.find_mult_sequence(number)
-
-        print_instructions(instrs, number, cost)
+    if to:
+        for number in range(2, to+1):
+            if binary_method:
+                cost, instrs = mult.binary_sequence(number)
+            else:
+                cost, instrs = mult.find_mult_sequence(number)
+                pass
+            pass
         pass
-    if output or showcache:
+    else:
+        for number in numbers:
+            if binary_method:
+                cost, instrs = mult.binary_sequence(number)
+            else:
+                cost, instrs = mult.find_mult_sequence(number)
+
+            print_instructions(instrs, number, cost)
+            pass
+        pass
+    if output or showcache or to:
         if output is None:
             output = sys.stdout
         if fmt == "text":
