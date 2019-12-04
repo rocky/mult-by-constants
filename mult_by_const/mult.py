@@ -210,7 +210,7 @@ class MultConst:
 
         # FIXME allow negative numbers too.
         assert n >= 0, "We handle only positive numbers"
-        cache_lower, cache_upper, finished, cache_instr = self.mult_cache.lookup(n)
+        cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
         if finished:
             return (cache_upper, cache_instr)
 
@@ -225,7 +225,7 @@ class MultConst:
 
         while n > 1:
 
-            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(n)
+            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
             if cache_upper < inf_cost:
                 cost += cache_upper
                 cache_instrs.reverse()  # Because we compute in reverse order here
@@ -272,7 +272,7 @@ class MultConst:
         and then does setup to the alpha-beta search
         """
 
-        cache_lower, cache_upper, finished, cache_instr = self.mult_cache.lookup(n)
+        cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
         if finished:
             return cache_upper, cache_instr
 
@@ -318,7 +318,7 @@ class MultConst:
 
         assert upper > 0  # or lower < upper
 
-        cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(n)
+        cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
         if finished:
             self.dedent()
             return cache_upper, cache_instrs
@@ -347,7 +347,7 @@ class MultConst:
                     )
                 return inf_cost, []
 
-            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache.lookup(m)
+            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[m]
             cache_instrs = cache_instrs + instrs
 
             if finished:
@@ -430,7 +430,7 @@ class MultConst:
         candidate_cost = instruction_sequence_cost(candidate_instrs)
         if candidate_cost >= upper:
             # We have another cutoff
-            if self.mult_cache.lookup(n)[-1] != candidate_instrs:
+            if self.mult_cache[n][-1] != candidate_instrs:
                 if self.debug:
                     self.debug_msg(
                         f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}"

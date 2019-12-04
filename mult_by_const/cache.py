@@ -24,9 +24,6 @@ class MultCache:
         self.costs = op_costs
         self.clear()
 
-    def __getitem__(self, key):
-        return self.cache[key]
-
     def keys(self):
         return self.cache.keys()
 
@@ -112,7 +109,7 @@ class MultCache:
         if do_insert:
             self.insert(n, lower, upper, finished, instrs)
 
-    def lookup(self, n: int) -> Tuple[float, float, bool, List[Instruction]]:
+    def __getitem__(self, n: int) -> Tuple[float, float, bool, List[Instruction]]:
         """Check if we have cached search results for "n", and return that.
         If not in cached, we will return (0, 0, {}). Note that a prior
         result has been fully only searched if if the lower bound is equal to the
