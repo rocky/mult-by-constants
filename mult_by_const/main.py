@@ -10,7 +10,7 @@ import os
 import sys
 from mult_by_const.mult import MultConst
 from mult_by_const.instruction import print_instructions
-from mult_by_const.io import dump_yaml, dump_json
+from mult_by_const.io import dump, dump_yaml, dump_json
 from mult_by_const.version import VERSION
 
 program = os.path.splitext(os.path.basename(__file__))[0]
@@ -61,7 +61,7 @@ def main(showcache, debug, binary_method, fmt, compact, output, numbers):
         if output is None:
             output = sys.stdout
         if fmt == "text":
-            mult.mult_cache.dump()
+            dump(mult.mult_cache)
         elif fmt == "yaml":
             dump_yaml(mult.mult_cache, out_fd=output, compact=compact)
         else:
