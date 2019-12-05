@@ -10,7 +10,7 @@ import os
 import sys
 from mult_by_const.mult import MultConst
 from mult_by_const.instruction import print_instructions
-from mult_by_const.io import dump, dump_yaml, dump_json
+from mult_by_const.io import dump, dump_csv, dump_json, dump_yaml
 from mult_by_const.version import VERSION
 
 program = os.path.splitext(os.path.basename(__file__))[0]
@@ -38,7 +38,7 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 )
 @click.option(
     "--fmt",
-    type=click.Choice(["text", "json", "yaml"], case_sensitive=False),
+    type=click.Choice(["csv", "json", "text", "yaml"], case_sensitive=False),
     default="text",
     help="Format, JSON, YAML, or text, to use in dumping multiplication cache.",
 )
@@ -77,6 +77,8 @@ def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
             output = sys.stdout
         if fmt == "text":
             dump(mult.mult_cache, out=output)
+        elif fmt == "csv":
+            dump_csv(mult.mult_cache, out=output)
         elif fmt == "yaml":
             dump_yaml(mult.mult_cache, out=output, compact=compact)
         else:

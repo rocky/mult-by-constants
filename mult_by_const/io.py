@@ -4,26 +4,13 @@
 from typing import Dict, Any
 from ruamel.yaml import YAML
 
+import csv
 import json
 import sys
 
 from mult_by_const.cache import MultCache, inf_cost
 from mult_by_const.instruction import str2instructions
 from mult_by_const.util import print_sep
-
-def dump_yaml(cache: MultCache, out=sys.stdout, compact=False) -> None:
-    table = reformat_cache(cache)
-    yaml = YAML()
-    if compact:
-        yaml.compact(seq_seq=False, seq_map=False)
-    else:
-        yaml.explicit_start = True  # type: ignore
-    yaml.dump(table, out)
-
-def dump_json(cache: MultCache, out=sys.stdout, indent=2) -> None:
-    table = reformat_cache(cache)
-    out.write(json.dumps(table, sort_keys=True, indent=indent))
-    out.write("\n")
 
 def dump(cache, out=sys.stdout) -> None:
     """Dump the instruction cache accumulated.
@@ -48,6 +35,36 @@ def dump(cache, out=sys.stdout) -> None:
     print_sep(out=out)
     out.write("\n")
     return
+
+def dump_csv(cache: MultCache, out=sys.stdout) -> None:
+    table = []
+    for num in sorted(cache.keys()):
+        lower, upper, finished, instrs = cache.cache[num]
+        if instrs:
+            table.append(
+                (num, upper,
+                 "search-complete" if finished else "upper-bound",
+                 str(instrs))
+                )
+            pass
+        pass
+
+    writer = csv.writer(out)
+    writer.writerows(table)
+
+def dump_json(cache: MultCache, out=sys.stdout, indent=2) -> None:
+    table = reformat_cache(cache)
+    out.write(json.dumps(table, sort_keys=True, indent=indent))
+    out.write("\n")
+
+def dump_yaml(cache: MultCache, out=sys.stdout, compact=False) -> None:
+    table = reformat_cache(cache)
+    yaml = YAML()
+    if compact:
+        yaml.compact(seq_seq=False, seq_map=False)
+    else:
+        yaml.explicit_start = True  # type: ignore
+    yaml.dump(table, out)
 
 def load_json(fd, mcache=MultCache()) -> None:
     mcache = load_table(json.load(fd), cache=mcache)
@@ -115,3 +132,4 @@ if __name__ == "__main__":
     dump_yaml(mcache)
     print_sep()
     dump_json(mcache)
+    dump_csv(mcache)
