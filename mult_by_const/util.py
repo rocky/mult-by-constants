@@ -1,5 +1,7 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """Miscellaneous small utility routines"""
+
+import sys
 from typing import List, Tuple, Dict
 
 
@@ -35,6 +37,6 @@ def bin2str(n: int):
 SEP_LEN = 60
 
 
-def print_sep(sep: str = "=") -> None:
-    print(sep * SEP_LEN)
+def print_sep(sep: str = "=", out=sys.stdout) -> None:
+    out.write(sep * SEP_LEN)
     return

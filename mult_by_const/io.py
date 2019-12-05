@@ -11,20 +11,21 @@ from mult_by_const.cache import MultCache, inf_cost
 from mult_by_const.instruction import str2instructions
 from mult_by_const.util import print_sep
 
-def dump_yaml(cache: MultCache, out_fd=sys.stdout, compact=False) -> None:
+def dump_yaml(cache: MultCache, out=sys.stdout, compact=False) -> None:
     table = reformat_cache(cache)
     yaml = YAML()
     if compact:
         yaml.compact(seq_seq=False, seq_map=False)
     else:
         yaml.explicit_start = True  # type: ignore
-    yaml.dump(table, out_fd)
+    yaml.dump(table, out)
 
-def dump_json(cache: MultCache, out_fd=sys.stdout, indent=2) -> None:
+def dump_json(cache: MultCache, out=sys.stdout, indent=2) -> None:
     table = reformat_cache(cache)
-    out_fd.write(json.dumps(table, sort_keys=True, indent=indent))
+    out.write(json.dumps(table, sort_keys=True, indent=indent))
+    out.write("\n")
 
-def dump(cache) -> None:
+def dump(cache, out=sys.stdout) -> None:
     """Dump the instruction cache accumulated.
     """
     # FIXME: compute field widths dynamically
@@ -39,12 +40,13 @@ def dump(cache) -> None:
         else:
             cache_str = f"cost: ({lower},{upper_any:4}]"
             assert upper >= lower
-        print(f"{num:4}: {cache_str};\t{str(instrs)}")
-    print("\n")
-    print(f"Cache hits (finished):\t\t{cache.hits_exact:4}")
-    print(f"Cache hits (unfinished):\t{cache.hits_partial:4}")
-    print(f"Cache misses:\t\t\t{cache.misses:4}")
-    print_sep()
+        out.write(f"{num:4}: {cache_str};\t{str(instrs)}\n")
+    out.write("\n")
+    out.write(f"Cache hits (finished):\t\t{cache.hits_exact:4}\n")
+    out.write(f"Cache hits (unfinished):\t{cache.hits_partial:4}\n")
+    out.write(f"Cache misses:\t\t\t{cache.misses:4}\n")
+    print_sep(out=out)
+    out.write("\n")
     return
 
 def load_json(fd, mcache=MultCache()) -> None:

@@ -17,12 +17,12 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 
 
 @click.command()
+@click.option("--to", type=int, required=False, help="Generate table up to this value.")
 @click.option(
-    "--to", type=int, required=False,
-    help="Generate table up to this value."
-)
-@click.option(
-    "--showcache/--no-showcache", "-S", default=False, help="Show multiplication cache."
+    "--showcache/--no-showcache",
+    "-S",
+    default=False,
+    help="Show multiplication cache. This is forced on when either --fmt or --to is given.",
 )
 @click.option(
     "--debug/--no-debug",
@@ -54,7 +54,7 @@ def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
     """
     mult = MultConst(debug=debug)
     if to:
-        for number in range(2, to+1):
+        for number in range(2, to + 1):
             if binary_method:
                 cost, instrs = mult.binary_sequence(number)
             else:
@@ -76,13 +76,13 @@ def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
         if output is None:
             output = sys.stdout
         if fmt == "text":
-            dump(mult.mult_cache)
+            dump(mult.mult_cache, out=output)
         elif fmt == "yaml":
-            dump_yaml(mult.mult_cache, out_fd=output, compact=compact)
+            dump_yaml(mult.mult_cache, out=output, compact=compact)
         else:
             assert fmt == "json"
             indent = None if compact else 2
-            dump_json(mult.mult_cache, out_fd=output, indent=indent)
+            dump_json(mult.mult_cache, out=output, indent=indent)
 
     return
 
