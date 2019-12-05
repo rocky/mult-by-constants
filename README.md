@@ -53,7 +53,7 @@ and look numbers that will probably have short sequences and improve the table. 
 Data Analysis
 -------------
 
-Having the tables in hand, we can then start analyzing the optimum sequence grows with the value of a number.
+Having the tables in hand, we can then start analyzing how the optimum sequence grows with the value of a number.
 
 
 Examples
