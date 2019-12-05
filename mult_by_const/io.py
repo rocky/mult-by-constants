@@ -12,6 +12,7 @@ from mult_by_const.cache import MultCache, inf_cost
 from mult_by_const.instruction import str2instructions
 from mult_by_const.util import print_sep
 
+
 def dump(cache, out=sys.stdout) -> None:
     """Dump the instruction cache accumulated.
     """
@@ -33,29 +34,36 @@ def dump(cache, out=sys.stdout) -> None:
     out.write(f"Cache hits (unfinished):\t{cache.hits_partial:4}\n")
     out.write(f"Cache misses:\t\t\t{cache.misses:4}\n")
     print_sep(out=out)
-    out.write("\n")
     return
+
 
 def dump_csv(cache: MultCache, out=sys.stdout) -> None:
     table = []
     for num in sorted(cache.keys()):
-        lower, upper, finished, instrs = cache.cache[num]
+        lower, cost, finished, instrs = cache.cache[num]
         if instrs:
             table.append(
-                (num, upper,
-                 "search-complete" if finished else "upper-bound",
-                 str(instrs))
-                )
+                {
+                    "n": num,
+                    "cost": cost,
+                    "search-status": "completed" if finished else "upper-bound",
+                    "sequence": str(instrs),
+                }
+            )
             pass
         pass
 
-    writer = csv.writer(out)
+    fieldnames = ("n", "cost", "search-status", "sequence")
+    writer = csv.DictWriter(out, dialect="excel-tab", fieldnames=fieldnames)
+    writer.writeheader()
     writer.writerows(table)
+
 
 def dump_json(cache: MultCache, out=sys.stdout, indent=2) -> None:
     table = reformat_cache(cache)
     out.write(json.dumps(table, sort_keys=True, indent=indent))
     out.write("\n")
+
 
 def dump_yaml(cache: MultCache, out=sys.stdout, compact=False) -> None:
     table = reformat_cache(cache)
@@ -66,10 +74,12 @@ def dump_yaml(cache: MultCache, out=sys.stdout, compact=False) -> None:
         yaml.explicit_start = True  # type: ignore
     yaml.dump(table, out)
 
+
 def load_json(fd, mcache=MultCache()) -> None:
     mcache = load_table(json.load(fd), cache=mcache)
     mcache.check()
     return mcache
+
 
 def load_table(table, check_consistency=True, cache=MultCache()) -> MultCache:
     """Reorganize read-in dictionary into the format used internally.
@@ -81,13 +91,13 @@ def load_table(table, check_consistency=True, cache=MultCache()) -> MultCache:
     for n, value in products.items():
         d = dict(value)
         line += 1
-        for key in ("finished", "cost", "sequence"):
+        for key in ("search-status", "cost", "sequence"):
             if key not in d:
                 print(f"Error: item {line} has no key {key}; entry:\n{d}")
                 continue
             pass
         upper = d["cost"]
-        finished = d["finished"] == "search-complete"
+        finished = d["search-status"] == "completed"
         instrs = str2instructions(d["sequence"])
         cache.insert(n, 0, upper, finished, instrs)
         pass
@@ -95,10 +105,12 @@ def load_table(table, check_consistency=True, cache=MultCache()) -> MultCache:
         cache.check()
     return cache
 
+
 def load_yaml(fd, cache=MultCache()) -> MultCache:
     mcache = load_table(YAML().load(fd.read()))
     mcache.check()
     return mcache
+
 
 def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
     """Reorganize the instruction cache in a more machine-readable format"
@@ -106,7 +118,7 @@ def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
     table: Dict[str, Dict[int, Any]] = {
         "version": cache.version,
         "costs": cache.costs,
-        "products": {}
+        "products": {},
     }
     products = table["products"]
     for num in sorted(cache.keys()):
@@ -114,7 +126,7 @@ def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
         if instrs:
             products[num] = {
                 "cost": upper,
-                "finished": "search-complete" if finished else "upper-bound",
+                "search-status": "completed" if finished else "upper-bound",
                 "sequence": str(instrs),
             }
             pass
@@ -124,12 +136,15 @@ def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
 
 if __name__ == "__main__":
     import os.path as osp
-    yaml_table = osp.join(osp.dirname(__file__), "..", "pytest", "data", "10-stdcost.yaml")
+
+    yaml_table = osp.join(
+        osp.dirname(__file__), "..", "pytest", "data", "10-stdcost.yaml"
+    )
     mcache = load_yaml(open(yaml_table, "r"))
 
     dump(mcache)
-    print_sep()
     dump_yaml(mcache)
     print_sep()
     dump_json(mcache)
+    print_sep()
     dump_csv(mcache)

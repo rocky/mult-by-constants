@@ -39,4 +39,5 @@ SEP_LEN = 60
 
 def print_sep(sep: str = "=", out=sys.stdout) -> None:
     out.write(sep * SEP_LEN)
+    out.write("\n")
     return

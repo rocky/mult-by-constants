@@ -5000,7 +5000,6 @@
 4999: cost:       8;	[<< 2, +1, << 3, -1, << 4, +1, << 3, -1]
 5000: cost:       7;	[<< 2, +1, << 3, -1, << 4, +1, << 3]
 
-
 Cache hits (finished):		14762
 Cache hits (unfinished):	20110
 Cache misses:			4999

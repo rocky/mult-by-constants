@@ -109,7 +109,7 @@ class MultCache:
         if do_insert:
             self.insert(n, lower, upper, finished, instrs)
 
-    def __getitem__(self, n: int) -> Tuple[float, float, bool, List[Instruction]]:
+    def __getitem__(self, n: int, record=True) -> Tuple[float, float, bool, List[Instruction]]:
         """Check if we have cached search results for "n", and return that.
         If not in cached, we will return (0, 0, {}). Note that a prior
         result has been fully only searched if if the lower bound is equal to the
@@ -118,15 +118,16 @@ class MultCache:
         cache_lower, cache_upper, finished, cache_instrs = self.cache.get(
             n, (0, inf_cost, False, [])
         )
-        if finished:
-            self.hits_exact += 1
-        elif n not in self.cache:
-            self.misses += 1
-        else:
-            # FIXME: should we split out the case where there is *no*
-            # information, but key has been seen as opposed to the
-            # case where there not *complete* information?
-            self.hits_partial += 1
+        if record:
+            if finished:
+                self.hits_exact += 1
+            elif n not in self.cache:
+                self.misses += 1
+            else:
+                # FIXME: should we split out the case where there is *no*
+                # information, but key has been seen as opposed to the
+                # case where there not *complete* information?
+                self.hits_partial += 1
         self.cache[n] = (cache_lower, cache_upper, finished, cache_instrs)
         return cache_lower, cache_upper, finished, deepcopy(cache_instrs)
 
