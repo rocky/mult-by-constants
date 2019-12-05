@@ -9,7 +9,6 @@ from mult_by_const.costs import OP_COSTS_DEFAULT
 from mult_by_const.instruction import (
     FACTOR_FLAG,
     Instruction,
-    print_instructions,
     instruction_sequence_cost,
     instruction_sequence_value,
 )
@@ -114,6 +113,48 @@ class MultConst:
                     candidate_instrs = candidate_instrs + instrs
                     upper = lower + try_cost
                 pass
+            pass
+        return upper, candidate_instrs
+
+    def try_factors(
+        self,
+        n: int,  # Number we are seeking
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
+    ) -> Tuple[float, List[Instruction]]:
+
+        # The first factors, 3 = 2+1, and 5 = 4+1, are done special
+        # and out of the "while" loop below, because we don't want to
+        # consider subtraction factors 2-1 = 1, or 4-1 = 3.
+        #
+        # The latter, 3, is covered by 2+1 of the "for" loop below
+
+        for factor, shift_amount in ((3, 1), (5, 2)):
+            if factor > n:
+                break
+            upper, candidate_instrs = self.try_shift_op_factor(
+                n, factor, "add", shift_amount, upper, lower, instrs, candidate_instrs
+            )
+            pass
+
+        i, j = 3, 8
+        while j - 1 <= n:
+            upper, candidate_instrs = self.try_shift_op_factor(
+                n, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
+            )
+            upper, candidate_instrs = self.try_shift_op_factor(
+                n, j + 1, "add", i, upper, lower, instrs, candidate_instrs
+            )
+
+            # Any other factors to try?
+
+            i += 1
+            j <<= 1
             pass
         return upper, candidate_instrs
 
@@ -307,13 +348,19 @@ class MultConst:
         if self.debug:
             self.debug_msg(f"alpha-beta search for {n} with max cost: {upper}", 2)
 
-        # Lowers the cost of the instruction
-        # sequence we've seen so far.  This sequence is
-        # not the full sequence until we reach the end of
-        # this routine.
-        # If lower ever exceeds "upper", then this sequence is
-        # abandoned because there's some other sequence that is
-        # better.
+        # Variable "lower" tracks the cost of potential instruction
+        # sequences used in searching.  It starts off 0 on a new
+        # search. As we break apart the number searched, lower
+        # accumlates the glue cost to combine the subparts back
+        # together. When "lower" ever exceeds "upper" for a sequence,
+        # the sequence is abandoned because there's some other
+        # sequence that is better.
+        #
+        # In contrast to "cache_upper", which tracks the cost of
+        # "cache_instrs", we often don't have an instruction sequence
+        # that has a cost equal to lower, unless "lower" == "upper",
+        # in which case our searching is complete.
+
         lower: float = 0
 
         assert upper > 0  # or lower < upper
@@ -388,34 +435,15 @@ class MultConst:
             pass
 
         candidate_instrs = cache_instrs
-        # The first factors, 3 = 2+1, and 5 = 4+1, are done special
-        # and out of the "while" loop below, because we don't want to
-        # consider subtraction factors 2-1 = 1, or 4-1 = 3.
-        #
-        # The latter, 3, is covered by 2+1 of the "for" loop below
 
-        for factor, shift_amount in ((3, 1), (5, 2)):
-            if factor > n:
-                break
-            upper, candidate_instrs = self.try_shift_op_factor(
-                m, factor, "add", shift_amount, upper, lower, instrs, candidate_instrs
-            )
-            pass
+        # FIXME: the below could be put in a list of
+        # functions to call. This improves customization,
+        # for example, if there is no subtraction.
 
-        i, j = 3, 8
-        while j - 1 <= n:
-            upper, candidate_instrs = self.try_shift_op_factor(
-                m, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
-            )
-            upper, candidate_instrs = self.try_shift_op_factor(
-                m, j + 1, "add", i, upper, lower, instrs, candidate_instrs
-            )
-
-            # Any other factors to try?
-
-            i += 1
-            j <<= 1
-            pass
+        # Try factoring
+        upper, candidate_instrs = self.try_factors(
+            m, upper, lower, instrs, candidate_instrs
+        )
 
         # Try subtracting one
         upper, candidate_instrs = self.try_plus_offset(
@@ -454,7 +482,7 @@ class MultConst:
 
 if __name__ == "__main__":
     from mult_by_const.instruction import print_instructions
-    from mult_by_const.io import dump
+    # from mult_by_const.io import dump
 
     # m = MultConst(debug=True)
     # cost, instrs = m.binary_sequence(340)
