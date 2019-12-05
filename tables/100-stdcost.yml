@@ -9,405 +9,405 @@ costs:
 products:
   0:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[constant 0]'
   1:
     cost: 0
-    finished: search-complete
+    search-status: search-complete
     sequence: '[noop]'
   2:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1]'
   3:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1]'
   4:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2]'
   5:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1]'
   6:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 1]'
   7:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1]'
   8:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3]'
   9:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1]'
   10:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1]'
   11:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1, +1]'
   12:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 2]'
   13:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 2, +1]'
   14:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 1]'
   15:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1]'
   16:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4]'
   17:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1]'
   18:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1]'
   19:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1, +1]'
   20:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 2]'
   21:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 2, +1]'
   22:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1, +1, << 1]'
   23:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3, -1]'
   24:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3]'
   25:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3, +1]'
   26:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 2, +1, << 1]'
   27:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1, +(n)]'
   28:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 2]'
   29:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 2, +1]'
   30:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 1]'
   31:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, -1]'
   32:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5]'
   33:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, +1]'
   34:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 1]'
   35:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 1, +1]'
   36:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 2]'
   37:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 2, +1]'
   38:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1, +1, << 1]'
   39:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 3, -1]'
   40:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 3]'
   41:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 3, +1]'
   42:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 2, +1, << 1]'
   43:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 2, +1, << 1, +1]'
   44:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1, +1, << 2]'
   45:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 1, +(n)]'
   46:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3, -1, << 1]'
   47:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 4, -1]'
   48:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 4]'
   49:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 4, +1]'
   50:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3, +1, << 1]'
   51:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 1, +(n)]'
   52:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 2, +1, << 2]'
   53:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 2, +1, << 2, +1]'
   54:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1, +(n), << 1]'
   55:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 3, -1]'
   56:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 3]'
   57:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 3, +1]'
   58:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, -1, << 2, +1, << 1]'
   59:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 2, -1]'
   60:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 2]'
   61:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 2, +1]'
   62:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, -1, << 1]'
   63:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 6, -1]'
   64:
     cost: 1
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 6]'
   65:
     cost: 2
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 6, +1]'
   66:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, +1, << 1]'
   67:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, +1, << 1, +1]'
   68:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 2]'
   69:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 2, +1]'
   70:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 1, +1, << 1]'
   71:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 3, -1]'
   72:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 3]'
   73:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 3, +1]'
   74:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 2, +1, << 1]'
   75:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 2, +(n)]'
   76:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1, +1, << 2]'
   77:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 3, +1, << 1, +1, << 2, +1]'
   78:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 3, -1, << 1]'
   79:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 4, -1]'
   80:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 4]'
   81:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 4, +1]'
   82:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 3, +1, << 1]'
   83:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 3, +1, << 1, +1]'
   84:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 2, +1, << 2]'
   85:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, +1, << 2, +(n)]'
   86:
     cost: 7
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 2, +1, << 1, +1, << 1]'
   87:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1, +1, << 3, -1]'
   88:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1, +1, << 3]'
   89:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 2, +1, << 1, +1, << 3, +1]'
   90:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 1, +(n), << 1]'
   91:
     cost: 6
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 4, -1, << 1, +(n), << 1, +1]'
   92:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3, -1, << 2]'
   93:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, -1, << 1, +(n)]'
   94:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 4, -1, << 1]'
   95:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 5, -1]'
   96:
     cost: 3
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 5]'
   97:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 5, +1]'
   98:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 4, +1, << 1]'
   99:
     cost: 4
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 5, +1, << 1, +(n)]'
   100:
     cost: 5
-    finished: search-complete
+    search-status: search-complete
     sequence: '[<< 1, +1, << 3, +1, << 2]'

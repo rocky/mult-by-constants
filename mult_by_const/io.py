@@ -12,6 +12,9 @@ from mult_by_const.cache import MultCache, inf_cost
 from mult_by_const.instruction import str2instructions
 from mult_by_const.util import print_sep
 
+CSV_DIALECT = "excel-tab"
+CSV_FIELDNAMES = ("n", "cost", "search-status", "sequence")
+
 
 def dump(cache, out=sys.stdout) -> None:
     """Dump the instruction cache accumulated.
@@ -53,8 +56,7 @@ def dump_csv(cache: MultCache, out=sys.stdout) -> None:
             pass
         pass
 
-    fieldnames = ("n", "cost", "search-status", "sequence")
-    writer = csv.DictWriter(out, dialect="excel-tab", fieldnames=fieldnames)
+    writer = csv.DictWriter(out, dialect=CSV_DIALECT, fieldnames=CSV_FIELDNAMES)
     writer.writeheader()
     writer.writerows(table)
 
@@ -75,7 +77,21 @@ def dump_yaml(cache: MultCache, out=sys.stdout, compact=False) -> None:
     yaml.dump(table, out)
 
 
-def load_json(fd, mcache=MultCache()) -> None:
+def load_csv(fd, mcache=MultCache()) -> MultCache:
+    csv_reader = csv.DictReader(fd, dialect=CSV_DIALECT)
+    for row in csv_reader:
+        n = int(row["n"], 10)
+        cost = int(row["cost"], 10)
+        finished = row["search-status"] == "completed"
+        instrs = str2instructions(row["sequence"])
+        mcache.insert_or_update(n, 0, cost, finished, instrs)
+        pass
+
+    mcache.check()
+    return mcache
+
+
+def load_json(fd, mcache=MultCache()) -> MultCache:
     mcache = load_table(json.load(fd), cache=mcache)
     mcache.check()
     return mcache
@@ -99,7 +115,7 @@ def load_table(table, check_consistency=True, cache=MultCache()) -> MultCache:
         upper = d["cost"]
         finished = d["search-status"] == "completed"
         instrs = str2instructions(d["sequence"])
-        cache.insert(n, 0, upper, finished, instrs)
+        cache.insert_or_update(n, 0, upper, finished, instrs)
         pass
     if check_consistency:
         cache.check()
@@ -137,14 +153,18 @@ def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
 if __name__ == "__main__":
     import os.path as osp
 
-    yaml_table = osp.join(
-        osp.dirname(__file__), "..", "pytest", "data", "10-stdcost.yaml"
-    )
-    mcache = load_yaml(open(yaml_table, "r"))
+    # table_path = osp.join(
+    #     osp.dirname(__file__), "..", "tables", "100-stdcost.yml"
+    # )
+    # mcache = load_yaml(open(table_path, "r"))
 
+    # dump(mcache)
+    # dump_yaml(mcache)
+    # print_sep()
+    # dump_json(mcache)
+    # print_sep()
+    # dump_csv(mcache)
+
+    table_path = osp.join(osp.dirname(__file__), "..", "tables", "100-stdcost.csv")
+    mcache = load_csv(open(table_path, "r"))
     dump(mcache)
-    dump_yaml(mcache)
-    print_sep()
-    dump_json(mcache)
-    print_sep()
-    dump_csv(mcache)
