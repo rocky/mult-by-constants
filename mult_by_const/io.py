@@ -153,17 +153,15 @@ def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
 if __name__ == "__main__":
     import os.path as osp
 
-    # table_path = osp.join(
-    #     osp.dirname(__file__), "..", "tables", "100-stdcost.yml"
-    # )
-    # mcache = load_yaml(open(table_path, "r"))
+    table_path = osp.join(osp.dirname(__file__), "..", "tables", "100-stdcost.yml")
+    mcache = load_yaml(open(table_path, "r"))
 
     # dump(mcache)
     # dump_yaml(mcache)
     # print_sep()
     # dump_json(mcache)
     # print_sep()
-    # dump_csv(mcache)
+    dump_csv(mcache)
 
     table_path = osp.join(osp.dirname(__file__), "..", "tables", "100-stdcost.csv")
     mcache = load_csv(open(table_path, "r"))

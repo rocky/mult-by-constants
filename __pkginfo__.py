@@ -22,7 +22,8 @@ ftp_url = None
 
 #  click: for command-line options
 #  ruamel: For YAML output
-install_requires = ["click", "ruamel.yaml"]
+#  matplot, numpy, and pandas for plotting. This could be in a separate package!
+install_requires = ["click", "ruamel.yaml", "matplot", "numpy", "pandas"]
 
 license = "GPL-3"
 modname = "mult_by_const"
