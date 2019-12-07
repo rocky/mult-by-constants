@@ -394,7 +394,7 @@ class MultConst:
                 pass
             pass
         else:
-            self.mult_cache.insert(n, upper, upper, True, candidate_instrs)
+            self.mult_cache.insert_or_update(n, upper, upper, True, candidate_instrs)
             pass
         return
 
@@ -452,14 +452,7 @@ class MultConst:
             if lower >= upper:
                 # Saw a better result prevously. Do a cutoff after
                 # caching a partial or full result.
-                if m == 1:
-                    # n is a power of two; shift is probably the best
-                    # you can do here, except for may when n == 2,
-                    # and then maybe and "add" might be faster under
-                    # some cost models.
-                    self.mult_cache.insert(n, upper, upper, True, instrs)
-                else:
-                    self.mult_cache.update_field(n, lower=upper)
+                self.mult_cache.update_field(n, lower=upper)
                 if self.debug:
                     self.debug_msg(
                         f"**beta cutoff for {n} in cost {lower} > {upper}", -2
