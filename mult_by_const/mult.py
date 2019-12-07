@@ -25,7 +25,7 @@ from mult_by_const.cache import MultCache, inf_cost
 
 class MultConst:
     def __init__(
-        self, op_costs=OP_COSTS_DEFAULT, debug=False, shift_cost_fn=default_shift_cost
+            self, op_costs=OP_COSTS_DEFAULT, debug=False, shift_cost_fn=default_shift_cost, search_methods=None
     ):
 
         # Op_costs gives costs of using each kind of instruction.
@@ -53,6 +53,17 @@ class MultConst:
             # We use indent show nesting in debug output
             self.indent = 0
         self.debug = debug
+
+        if search_methods is None:
+            self.search_methods = (
+                self.search_short_factors,
+                self.search_subtract_one,
+                self.search_add_one
+            )
+            pass
+        else:
+            self.search_methods = search_methods
+        return
 
     def dedent(self) -> None:
         if self.debug:
@@ -326,6 +337,67 @@ class MultConst:
         self.mult_cache.update_field(n, finished=True)
         return cost, instrs
 
+    def search_short_factors(
+        self,
+        n: int,  # Number we are seeking
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
+    ) -> Tuple[float, List[Instruction]]:
+        return self.try_factors(n, upper, lower, instrs, candidate_instrs)
+
+    def search_subtract_one(
+        self,
+        n: int,  # Number we are seeking
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
+    ) -> Tuple[float, List[Instruction]]:
+        return self.try_plus_offset(n, -1, upper, lower, instrs, candidate_instrs)
+
+    def search_add_one(
+        self,
+        n: int,  # Number we are seeking
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
+    ) -> Tuple[float, List[Instruction]]:
+        return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs)
+
+    def check_for_cutoff(self, n: int, upper: float, candidate_instrs: List[Instruction]) -> None:
+
+        candidate_cost = instruction_sequence_cost(candidate_instrs)
+        if candidate_cost >= upper:
+            # We have another cutoff
+            if self.mult_cache[n][-1] != candidate_instrs:
+                if self.debug:
+                    self.debug_msg(
+                        f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}"
+                    )
+                    pass
+                self.mult_cache.insert_or_update(
+                    n, upper, candidate_cost, upper == candidate_cost, candidate_instrs
+                )
+                upper = candidate_cost
+                pass
+            pass
+        else:
+            self.mult_cache.insert(n, upper, upper, True, candidate_instrs)
+            pass
+        return
+
     def alpha_beta_search(
         self, n: int, upper: float
     ) -> Tuple[float, List[Instruction]]:
@@ -351,7 +423,7 @@ class MultConst:
         # Variable "lower" tracks the cost of potential instruction
         # sequences used in searching.  It starts off 0 on a new
         # search. As we break apart the number searched, lower
-        # accumlates the glue cost to combine the subparts back
+        # accumulates the glue cost to combine the subparts back
         # together. When "lower" ever exceeds "upper" for a sequence,
         # the sequence is abandoned because there's some other
         # sequence that is better.
@@ -436,43 +508,12 @@ class MultConst:
 
         candidate_instrs = cache_instrs
 
-        # FIXME: the below could be put in a list of
-        # functions to call. This improves customization,
-        # for example, if there is no subtraction.
+        for fn in self.search_methods:
+            upper, candidate_instrs = fn(
+                m, upper, lower, instrs, candidate_instrs
+            )
 
-        # Try factoring
-        upper, candidate_instrs = self.try_factors(
-            m, upper, lower, instrs, candidate_instrs
-        )
-
-        # Try subtracting one
-        upper, candidate_instrs = self.try_plus_offset(
-            m, -1, upper, lower, instrs, candidate_instrs
-        )
-
-        # Try adding one
-        upper, candidate_instrs = self.try_plus_offset(
-            m, +1, upper, lower, instrs, candidate_instrs
-        )
-
-        candidate_cost = instruction_sequence_cost(candidate_instrs)
-        if candidate_cost >= upper:
-            # We have another cutoff
-            if self.mult_cache[n][-1] != candidate_instrs:
-                if self.debug:
-                    self.debug_msg(
-                        f"**alpha cutoff for {n} in cost {candidate_cost} >= {upper}"
-                    )
-                    pass
-                self.mult_cache.insert_or_update(
-                    n, upper, candidate_cost, upper == candidate_cost, candidate_instrs
-                )
-                upper = candidate_cost
-                pass
-            pass
-        else:
-            self.mult_cache.insert(n, upper, upper, True, candidate_instrs)
-            pass
+        self.check_for_cutoff(n, upper, candidate_instrs)
 
         self.dedent()
         return upper, candidate_instrs
@@ -502,6 +543,6 @@ if __name__ == "__main__":
 
     n = 78
 
-    m = MultConst(debug=True)
-    cost, instrs = m.find_mult_sequence(n)
+    mconst = MultConst(debug=True)
+    cost, instrs = mconst.find_mult_sequence(n)
     print_instructions(instrs, n, cost)
