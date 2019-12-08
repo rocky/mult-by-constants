@@ -1,10 +1,11 @@
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
+- [Synopsis](#synopsis)
 - [Introduction](#introduction)
     - [As a library](#as-a-library)
     - [As a command-line utility](#as-a-command-line-utility)
-    - [Tables](#tables)
+    - [Instruction Tables](#instruction-tables)
     - [Data Analysis](#data-analysis)
 - [Examples](#examples)
     - [Instruction Sequences](#instruction-sequences)
@@ -13,10 +14,45 @@
 - [References](#references)
 
 <!-- markdown-toc end -->
+Synopsis
+========
+
+Python API:
+
+```Python
+from mult_by_const import MultConst, load_yaml, dump, dump_csv, print_instructions
+
+# Figure out a multiplication sequence for n
+mconst = MultConst(debug=True)
+cost, instrs = mconst.find_mult_sequence(n)
+print_instructions(instrs, n, cost)
+
+table_path = "tables/10000-stdcost.txt"
+mcache = load_yaml(open(table_path, "r"))    # Read in YAML table
+dump(mcache)                                 # Display table
+dump_csv(mcache, "tables/10000-stdcost.csv") # Output as CSV for data analysis
+```
+
+Command-line utility:
+
+```console
+$ mult-by-const 51  # Get instruction sequence to multiply by 51
+$ mult-by-const -to 100  # Get instruction sequences for positive numbers up to 100
+```
+
+
+
 Introduction
 ============
 
-This repository serves several purposes..
+This repository serves several purposes:
+
+* As a Python library for getting sequences of instructions to perform integer multiplications
+* As a command-line utility for doing the same
+* As a place to store Optimal instruction-sequence tables, and
+* for data analysis
+
+We drill into each of these below.
 
 As a library
 ------------
@@ -40,8 +76,8 @@ The command-line program also allows for the internal cache values to be dumped 
 
 Finally the command-line programs allows you to iterate up to some value, starting from scratch or starting from a previously-computed table. And this leads into the next purpose...
 
-Tables
-------
+Instruction Tables
+-------------------
 
 Instead of using our code to search for sequences, you can use tables that have been previously generatated. This is again suitable for use inside a compiler, or perhaps a general-purpose multiplication routine, which does a table lookup for "small" values. For larger ones a general-purpose routines can use this as a base table from which to do the standard multiplcation algorithm. For example, people learning multiplication learn by rote the multiplication table for pairs of numbers from 0 to 10.
 
@@ -221,10 +257,10 @@ Cache hits (finished):		   5
 Cache hits (unfinished):	  56
 Cache misses:			  31
 ============================================================
-$
 ```
 
 References
 ==========
-See my _Software: Practice and Experience_ paper [Multiplication by integer constants](https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.4380160704) for details.
-See also Section 8-4 of Henry Warren's: Hacker's Delight (ISBN-13: 978-0321842688) has some updates and revisions.
+* My _Software: Practice and Experience_ paper [Multiplication by integer constants](https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.4380160704) for details.
+* Section 8-4 of Henry Warren's: Hacker's Delight (ISBN-13: 978-0321842688) has some updates and revisions.
+* _The Art Computer Programming_, Vol 2, 2nd Edition; Section 4.6.3, page 441 of the 2nd Edition
