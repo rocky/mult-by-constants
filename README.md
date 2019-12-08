@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/rocky/python-mult-by-constants.svg)](https://travis-ci.org/rocky/mult-by-constants)
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
@@ -46,7 +48,6 @@ Command-line utility:
 $ mult-by-const 51  # Get instruction sequence to multiply by 51
 $ mult-by-const -to 100  # Get instruction sequences for positive numbers up to 100
 ```
-
 
 
 Introduction
@@ -271,3 +272,5 @@ References
 * My _Software: Practice and Experience_ paper [Multiplication by integer constants](https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.4380160704) for details.
 * Section 8-4 of Henry Warren's: Hacker's Delight (ISBN-13: 978-0321842688) has some updates and revisions.
 * _The Art Computer Programming_, Vol 2, 2nd Edition; Section 4.6.3, page 441 of the 2nd Edition
+* [Vincent Lefèvre' Multiplication by Integer Constant site](http://www.vinc17.net/research/mulbyconst/index.en.html)
+* Yevgen Voronenko and Markus Püschel's [Spirial Multiplier Block Generator site](http://spiral.ece.cmu.edu/mcm/gen.html)
