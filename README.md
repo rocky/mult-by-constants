@@ -14,6 +14,9 @@
 - [References](#references)
 
 <!-- markdown-toc end -->
+
+![Instruction-Sequence Costs for the first 5,000 Integers](./graphs/5000-bin-vs-stdcost.svg)
+
 Synopsis
 ========
 
@@ -28,9 +31,13 @@ cost, instrs = mconst.find_mult_sequence(n)
 print_instructions(instrs, n, cost)
 
 table_path = "tables/10000-stdcost.txt"
-mcache = load_yaml(open(table_path, "r"))    # Read in YAML table
-dump(mcache)                                 # Display table
-dump_csv(mcache, "tables/10000-stdcost.csv") # Output as CSV for data analysis
+with open(table_path) as in:
+	mcache = load_yaml(in)       # Read in YAML table
+dump(mcache)                     # Display table
+
+out_path = "tables/10000-stdcost.csv"
+with open(out_path, "w") as out:
+    dump_csv(mcache)             # Output as CSV for data analysis
 ```
 
 Command-line utility:
