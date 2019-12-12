@@ -45,7 +45,7 @@ $ ./mult-spe86
 Usage:
   mult-spe-86 <verbosity-level> [ <constant> ... ]
   mult-spe-86 -V | --version
-  mult-spe-86 -h | | -? --help
+  mult-spe-86 -h | -? | --help
 
 <verbosity-level> is an integer from 0..3;
 <constant> is a positive integer
@@ -61,9 +61,11 @@ To search sequence inside C code, here is an example of using the API:
 
 ...
     NODE *node = NULL; // Stores instruction sequence
-    init_hash();       // Instruction cache sequences found
     VALUE n = 123455;  // Adjust this to the multilier you want an instruction sequence for
     COST cost = spe_mult(n, node); // Find a multiplication sequence!
+	VALUE odd_n = n;
+	unsigned int shift_amount = make_odd(n);
+	print(sequence(n, node, shift_amount, 1); // Print instruction sequence.
 ```
 
 Above, `node` will contain a pointer structure for the instruction sequence;

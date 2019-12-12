@@ -12,7 +12,12 @@
 static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
 
 NODE *hash_table[HASH_SIZE];
-long int non = 0;
+
+/* Number of numbers. Setting this to -1 forces hash initialization on
+   the first cache store.
+*/
+long int non = -1;
+
 int verbosity;
 const char *OP2NAME[FSUB+1] =
   {
@@ -212,6 +217,7 @@ void try(VALUE n, NODE *node, OP opcode,
     }
 }
 
+extern
 unsigned int make_odd(VALUE *n) {
 
   unsigned int shift = 0;
@@ -233,8 +239,11 @@ COST spe_mult(VALUE n, NODE *node)
 
   long unsigned initial_shift = make_odd(&n);
 
-  if (non > MAXNON)
+  if (non > MAXNON || non == -1) {
+    if (non == -1)
+      non = 0;
     init_hash();
+  }
 
   p = n >> 1;
   while (p)  /* count the number of 1's in p */

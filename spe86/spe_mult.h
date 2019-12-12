@@ -63,6 +63,7 @@ typedef struct node {
 } NODE;
 
 extern void init_hash(void);
+extern unsigned int make_odd(VALUE *n);
 
 extern COST spe_mult(VALUE n, /*out*/ NODE *node);
 

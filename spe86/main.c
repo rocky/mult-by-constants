@@ -85,8 +85,6 @@ int main(int argc, char **argv)
     usage(EXIT_BADMODE);
   }
 
-  init_hash();
-
   if (argc > 2)
     {
       unsigned int i;

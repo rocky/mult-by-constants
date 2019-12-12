@@ -32,5 +32,7 @@ example: mult-spe86
 
 BINS=mult-spe86 test-mult
 FILES=$(BINS) *.o
+
+#: Wipe clean compiled and derived files, leaving just the source
 clean:
-	for file in $(FILES); do  [ -e $$file ] && rm $$file; done
+	for file in $(FILES); do  [ -e $$file ] && rm $$file || true; done

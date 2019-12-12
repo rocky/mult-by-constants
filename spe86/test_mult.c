@@ -24,7 +24,6 @@ static void check_costs(VALUE n, COST got, COST expected)
 
 int main(int argc, char **argv)
 {
-  init_hash();
   int values[] = {51, 10};
   int expected_cost[] = {4, 3};
 

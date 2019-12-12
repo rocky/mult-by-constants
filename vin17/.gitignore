@@ -1,6 +1,13 @@
 *.o
 *~
 /.cache
+/dagsearch
+/dsjoin
+/gendags
+/maxc
+/readcode
+/readcost
+/sumcosts
 ChangeLog
 __pycache__
 nohup.out
