@@ -11,31 +11,49 @@ static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
 
 #define ARRAY_SIZE(arr)     (sizeof(arr) / sizeof((arr)[0]))
 
-static void check_costs(VALUE n, COST got, COST expected,
+static void check_costs(VALUE n, const char method[], COST got, COST expected,
 			unsigned int shift_got, unsigned int shift_expected)
 {
-  if (got != expected || expected != expected) {
+  if (got != expected) {
     fprintf(stderr,
-	    "For number %" VALUEFMT
+	    "Using method %s for number %" VALUEFMT
 	    ", expecting cost %" COSTFMT ", got %" COSTFMT
+	    " instead.\n",
+	    method, n, expected, got);
+    exit(EXIT_FAILURE);
+  }
+  if (shift_got != shift_expected) {
+    fprintf(stderr,
+	    "Usign method %s for number %" VALUEFMT
 	    ", expecting shift %u, got %u instead.\n",
-	    n, expected, got, shift_expected, shift_got);
+	    method, n, shift_expected, shift_got);
     exit(EXIT_FAILURE);
   }
 }
 
 int main(int argc, char **argv)
 {
-  int values[] = {51, 10};
-  int expected_cost[] = {4, 3};
-  int expected_shift[] = {0, 1};
+  int values[] = {16, 51, 10};
+  int expected_binary_cost[] = {1, 6, 4};
+  int expected_cost[] = {1, 4, 3};
+  int expected_shift[] = {4, 0, 1};
   NODE *node = NULL;
   unsigned int initial_shift = 0;
 
+  // Test binary cost method
+  for (int i = 0; i < ARRAY_SIZE(values); i++) {
+    int n = values[i];
+    unsigned int cost = binary_mult_cost(n);
+    check_costs(n, "binary method", cost, expected_binary_cost[i],
+		expected_shift[i], expected_shift[i]);
+  }
+
+  // Test SPE multiplication method
   for (int i = 0; i < ARRAY_SIZE(values); i++) {
     int n = values[i];
     unsigned int cost = spe_mult(n, node, &initial_shift);
-    check_costs(n, cost, expected_cost[i], initial_shift, expected_shift[i]);
+    check_costs(n, "spe method", cost, expected_cost[i],
+		initial_shift, expected_shift[i]);
   }
   return EXIT_OK;
 }

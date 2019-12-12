@@ -10,7 +10,7 @@
 
 #include "spe_mult.h"
 #include <string.h>
-#include <limits.h>
+#include <stdbool.h>
 
 #ifdef NCALLS
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
@@ -42,12 +42,13 @@ void usage(int exit_code)
   fprintf(stderr,
 	  "Usage: \n"
 	  "  %s <verbosity-level> [ <constant> ... ]\n"
+	  "  %s -b | --binary [ <constant> ... ] \n"
 	  "  %s -V | --version \n"
 	  "  %s -h | | -? --help \n"
 	  "\n"
 	  "<verbosity-level> is an integer from 0..3;\n"
 	  "<constant> is a positive integer\n",
-	  PROGRAM, PROGRAM, PROGRAM);
+	  PROGRAM, PROGRAM, PROGRAM, PROGRAM);
   exit(exit_code);
 }
 
@@ -56,6 +57,7 @@ int main(int argc, char **argv)
 {
   char *endptr;
   const char *first_arg = argv[1];
+  bool binary_cost_only = false;
 
   /* The following are returned as a result of searching for a multiplication sequence. */
   NODE *node = NULL;
@@ -73,18 +75,23 @@ int main(int argc, char **argv)
     exit(EXIT_SUCCESS);
   }
 
-  verbosity = strtol(first_arg, &endptr, 10);
+  if ( (strcoll(first_arg, "-b") == 0) ||
+       (strcoll(first_arg, "--binary") == 0 ) )
+    binary_cost_only = true;
+  else {
+    verbosity = strtol(first_arg, &endptr, 10);
 
-  /* Check for various possible errors */
-  if ((errno == ERANGE && (verbosity == LONG_MAX || verbosity == LONG_MIN))
-      || (errno != 0 && verbosity == 0)) {
-    perror("strtol");
-    exit(EXIT_BADMODE);
-  }
+    /* Check for various possible errors */
+    if ((errno == ERANGE && (verbosity == LONG_MAX || verbosity == LONG_MIN))
+	|| (errno != 0 && verbosity == 0)) {
+      perror("strtol");
+      exit(EXIT_BADMODE);
+    }
 
-  if (endptr == first_arg) {
-    fprintf(stderr, "No digits for verbosity were found in '%s'.\n", first_arg);
-    usage(EXIT_BADMODE);
+    if (endptr == first_arg) {
+      fprintf(stderr, "No digits for verbosity were found in '%s'.\n", first_arg);
+      usage(EXIT_BADMODE);
+    }
   }
 
   if (argc > 2)
@@ -92,16 +99,40 @@ int main(int argc, char **argv)
       unsigned int i;
 
       for (i = 2; i < argc; i++)
-        (void) spe_mult(string_to_value(argv[i]), node, &initial_shift);
+	if (binary_cost_only) {
+	  VALUE n = string_to_value(argv[i]);
+	  COST cost = binary_mult_cost(n);
+	  printf("%" VALUEFMT " = ", n);
+	  print_binary_value(n);
+	  printf("\n");
+	  print_cost(n, cost);
+	} else {
+	  (void) spe_mult(string_to_value(argv[i]), node, &initial_shift);
+	}
     }
   else
     {
       char buffer[64];
+      if (binary_cost_only) {
+	printf("Using binary-method to show costs only.\n");
+      } else {
+	printf("Using SP&E instruction searching method.\n");
+	printf("Using Note: the verbosity level set to %d.\n", verbosity);
+      }
       printf("Note: the verbosity level set to %d.\n", verbosity);
       while (1) {
 	  printf("Enter a positive number (or Ctrl-d to exit): ");
 	  if (scanf("%63s", buffer) == 1)
-	    spe_mult(string_to_value(buffer), node, &initial_shift);
+	    if (binary_cost_only) {
+	      VALUE n = string_to_value(buffer);
+	      COST cost = binary_mult_cost(n);
+	      printf("%" VALUEFMT " = ", n);
+	      print_binary_value(n);
+	      printf("\n");
+	      print_cost(n, cost);
+	    } else {
+	      spe_mult(string_to_value(buffer), node, &initial_shift);
+	    }
 	  else
 	    break;
       };

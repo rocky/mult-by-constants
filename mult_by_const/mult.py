@@ -260,8 +260,12 @@ class MultConst:
 
         """
 
+        if n == 0:
+            return self.op_costs["zero"]
+
         # FIXME allow negative numbers too.
-        assert n >= 0, "We handle only positive numbers"
+        assert n > 0, "We handle only positive numbers for now"
+
         cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
         if finished:
             return (cache_upper, cache_instr)
@@ -269,7 +273,9 @@ class MultConst:
         return self.binary_sequence_inner(n)
 
     def binary_sequence_inner(self, n: int) -> Tuple[float, List[Instruction]]:
+
         assert n > 0
+
         orig_n = n
 
         bin_instrs: List[Instruction] = []

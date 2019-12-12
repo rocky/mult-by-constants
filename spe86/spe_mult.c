@@ -7,18 +7,16 @@
  * Compile with -DNCALLS to get the number of get_node() and try() calls.
  */
 
+#include <assert.h>
 #include "spe_mult.h"
 
 static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
 
 NODE *hash_table[HASH_SIZE];
 
-/* Number of numbers. Setting this to -1 forces hash initialization on
-   the first cache store.
-*/
 long int non = -1;
 
-int verbosity;
+int verbosity = 1;
 const char *OP2NAME[FSUB+1] =
   {
    "INVALID", "NOOP", "add(1)", "subtract(1)", "add(n)", "subtract(n)"
@@ -37,6 +35,17 @@ void try(VALUE n, NODE *node, OP opcode,
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
 #endif
 
+void print_binary_value(VALUE n)
+{
+  for(int i = sizeof(n)<<3; i; i--)
+    putchar('0' + ((n>>(i-1)) & 1));
+}
+
+extern void
+print_cost(VALUE n, COST cost) {
+  printf("Cost(%" VALUEFMT ") = %" COSTFMT "\n", n, cost);
+}
+
 extern void
 print_sequence(VALUE n, NODE *node, COST cost,
                long unsigned int initial_shift, int verbosity)
@@ -44,7 +53,7 @@ print_sequence(VALUE n, NODE *node, COST cost,
 
   if (verbosity > -1)
     {
-      printf("Cost(%" VALUEFMT ") = %" COSTFMT "\n", n, cost);
+      print_cost(n, cost);
       if (verbosity > 0) {
         unsigned int i = emit_code(node);
         if (initial_shift > 0) {
@@ -165,8 +174,8 @@ NODE *get_node(VALUE n, COST limit)
           d <<= 1;
           shift++;
         }
-      try(n - 1, node, ADD1, SHIFT_COST + ADD_COST, 0 PLIMIT);
-      try(n + 1, node, SUB1, SHIFT_COST + SUB_COST, 0 PLIMIT);
+      try(n - 1, node, ADD1, ADD_COST, 0 PLIMIT);
+      try(n + 1, node, SUB1, SUB_COST, 0 PLIMIT);
     }
 
   return node;
@@ -176,6 +185,7 @@ void try(VALUE n, NODE *node, OP opcode,
          COST cost, unsigned int shift, COST *limit)
 {
   NODE *tmp_node;
+  unsigned int shift_amount = make_odd(&n);
 
 #ifdef NCALLS
   if (++ntry == 0)
@@ -185,11 +195,7 @@ void try(VALUE n, NODE *node, OP opcode,
     }
 #endif
 
-  while(even(n))
-    {
-      n >>= 1;
-      shift++;
-    }
+  if (shift_amount) cost += SHIFT_COST;
 
   if (cost > *limit)
     return;
@@ -220,13 +226,53 @@ void try(VALUE n, NODE *node, OP opcode,
 extern
 unsigned int make_odd(VALUE *n) {
 
-  unsigned int shift = 0;
-  while(even(*n))
-    {
-      *n >>= 1;
-      shift++;
-    }
+  unsigned int shift;
+  for (shift=0 ; even(*n); shift ++)
+    *n >>= 1;
   return shift;
+}
+
+extern
+unsigned int make_even(VALUE *n) {
+  unsigned int shift;
+  for (shift=0 ; odd(*n); shift ++)
+    *n >>= 1;
+  return shift;
+}
+
+
+/* FIXME: This doesn't handle subtractions or varying
+   by shifting larger amounts.
+*/
+extern
+COST binary_mult_cost(VALUE n)
+{
+  if (n == (VALUE) 0) return BYZERO_COST;
+  if (n == (VALUE) 1) return BYONE_COST;
+
+  assert(n > (VALUE) 0);
+
+  {
+    /* count the one minus the number of 1's in n. */
+    COST cost = (VALUE) 0;
+    VALUE p;
+    if (even(n)) {
+      /* FIXME: When we allow costs per shift amount, the return value of make_odd would
+         go into the shift cost, somehow. */
+      (void) make_odd(&n);
+      if (n == (VALUE) 1) return SHIFT_COST;
+      p = n;
+    } else {
+      p = n >> 1;
+    }
+    while (p) {
+      if (odd(p)) {
+        cost += SHIFT_COST + ADD_COST;
+      }
+      p >>= 1;
+    }
+    return cost;
+  }
 }
 
 extern
@@ -239,23 +285,23 @@ COST spe_mult(VALUE n, NODE *node, unsigned int *initial_shift)
 
   *initial_shift = make_odd(&n);
 
+  /* Initial/reset cache, if needed */
   if (non > MAXNON || non == -1) {
     if (non == -1)
       non = 0;
     init_hash();
   }
 
-  p = n >> 1;
-  while (p)  /* count the number of 1's in p */
-    {
-      limit += SHIFT_COST + ADD_COST;
-      p &= p-1;
-    }
+  /* Use the binary method to get a limit on the multiplication sequence.
+     Until we have a routine that actually gets the binary method, tack on an additional
+     cost so that searching will update with the binary method if no other method is available.
+  */
+  limit  = binary_mult_cost(n) + ADD_COST;
   node = get_node(n, limit);
 
-  COST cost = node->cost * (COST) 2;
+  COST cost = node->cost;
   if (*initial_shift > 0) {
-    cost += (COST) 1;
+    cost += SHIFT_COST;
   }
 
   print_sequence(orig_n, node, cost, *initial_shift, verbosity);
