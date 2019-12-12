@@ -4,13 +4,23 @@
  */
 
 #include "spe_mult.h"
-#include <assert.h>
 
 #ifdef NCALLS
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
 #endif
 
 #define ARRAY_SIZE(arr)     (sizeof(arr) / sizeof((arr)[0]))
+
+static void check_costs(VALUE n, COST got, COST expected)
+{
+  if (got != expected) {
+    fprintf(stderr,
+	    "For number %" VALUEFMT
+	    ", expecting cost %" COSTFMT ", got %" COSTFMT
+	    " instead.", n, got, expected);
+    exit(EXIT_FAILURE);
+  }
+}
 
 int main(int argc, char **argv)
 {
@@ -22,7 +32,7 @@ int main(int argc, char **argv)
     NODE *node;
     int n = values[i];
     unsigned int cost = spe_mult(n, node);
-    assert(cost == expected_cost[i]);
+    check_costs(n, cost, expected_cost[i]);
   }
   return EXIT_OK;
 }

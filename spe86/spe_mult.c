@@ -2,7 +2,7 @@
  *
  * Multiplication by a Constant -- Rocky Bernstein's 1986 Software Practice and Expereince paper
  *
- * Usage: mult-spe86 <verbosity={0 | 1 | 2} [ <constant> ... ]
+ * A library for finding multiplication sequences.
  *
  * Compile with -DNCALLS to get the number of get_node() and try() calls.
  */
@@ -14,30 +14,42 @@ static char opsign[] = { ' ', ' ', '+', '-', '+', '-' };
 NODE *hash_table[HASH_SIZE];
 long int non = 0;
 int verbosity;
+const char *OP2NAME[FSUB+1] =
+  {
+   "INVALID", "NOOP", "add(1)", "subtract(1)", "add(n)", "subtract(n)"
+  };
+
+NODE *get_node(VALUE n, COST limit);
+void try(VALUE n, NODE *node, OP opcode,
+    COST cost, unsigned int shift, COST *limit);
 
 #ifdef NCALLS
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
 #endif
 
 extern void
-print_sequence(VALUE n, NODE *node, unsigned int cost,
+print_sequence(VALUE n, NODE *node, COST cost,
                long unsigned int initial_shift, int verbosity)
 {
 
-  printf("Cost(%" VALUEFMT ") = %u\n", n, cost);
-  if (verbosity >= 0) {
-    unsigned int i = emit_code(node);
-    if (initial_shift > 0) {
-      printf("%9lu: u%u = u%u << %lu\n", n, i, i-1, initial_shift);
-    }
-  }
+  if (verbosity > -1)
+    {
+      printf("Cost(%" VALUEFMT ") = %" COSTFMT "\n", n, cost);
+      if (verbosity > 0) {
+        unsigned int i = emit_code(node);
+        if (initial_shift > 0) {
+          printf("%9lu: u%u = u%u << %lu\n", n, i, i-1, initial_shift);
+        }
+
+      }
 
 #ifdef NCALLS
-  printf("%lu calls to get_node()\n", ngn);
-  printf("%lu calls to try()\n", ntry);
-  printf("%lu calls to malloc()\n", nmalloc);
+      printf("%lu calls to get_node()\n", ngn);
+      printf("%lu calls to try()\n", ntry);
+      printf("%lu calls to malloc()\n", nmalloc);
 #endif
-  fflush(stdout);
+      fflush(stdout);
+    }
 }
 
 extern
@@ -66,7 +78,7 @@ void init_hash(void)
   errexit("internal error ('non' too high)!", EXIT_INTERROR);
 }
 
-NODE *get_node(VALUE n, int unsigned limit)
+NODE *get_node(VALUE n, COST limit)
 {
   unsigned int hash;
   NODE *node;
@@ -78,8 +90,8 @@ NODE *get_node(VALUE n, int unsigned limit)
     }
 #endif
 
-  if (verbosity >= 2)
-    printf("get_node %" VALUEFMT " %u\n", n, limit);
+  if (verbosity >= 3)
+    printf("get_node %" VALUEFMT " %" COSTFMT "\n", n, limit);
 
   hash = n % HASH_SIZE;
   node = hash_table[hash];
@@ -149,7 +161,7 @@ NODE *get_node(VALUE n, int unsigned limit)
 }
 
 void try(VALUE n, NODE *node, OP opcode,
-         unsigned int cost, unsigned int shift, unsigned int *limit)
+         COST cost, unsigned int shift, COST *limit)
 {
   NODE *tmp_node;
 
@@ -187,9 +199,9 @@ void try(VALUE n, NODE *node, OP opcode,
       *limit = cost - 1;
 
       if (verbosity >= 2)
-        printf("node %" VALUEFMT ": parent %" VALUEFMT ", opcode %d, "
-               "shift count %u, cost %u\n", node->value,
-               node->parent->value, node->opcode, node->shift, node->cost);
+        printf("node %" VALUEFMT ": parent %" VALUEFMT ", %s, "
+               "shift count %u, cost %" COSTFMT "\n", node->value,
+               node->parent->value, OP2NAME[node->opcode], node->shift, node->cost);
     }
 }
 
@@ -205,12 +217,12 @@ unsigned int make_odd(VALUE *n) {
 }
 
 extern
-unsigned int spe_mult(VALUE n, NODE *node)
+COST spe_mult(VALUE n, NODE *node)
 {
   const NODE *orig_node = node;
 
   VALUE p;
-  unsigned int limit = 0;
+  COST limit = 0;
 
   VALUE orig_n = n;
 
@@ -227,9 +239,9 @@ unsigned int spe_mult(VALUE n, NODE *node)
     }
   node = get_node(n, limit);
 
-  unsigned int cost = node->cost * 2;
+  COST cost = node->cost * (COST) 2;
   if (initial_shift > 0) {
-    cost += 1;
+    cost += (COST) 1;
   }
 
   print_sequence(orig_n, node, cost, initial_shift, verbosity);

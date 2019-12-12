@@ -16,6 +16,7 @@ mult-spe86: main.o spe_mult.o
 
 main.c: spe_mult.h
 spe_mult.c: spe_mult.h
+test_mult.c: spe_mult.h
 
 #: Build the main command-line utility
 test-mult: test_mult.o spe_mult.o

@@ -34,26 +34,39 @@ VALUE string_to_value(char *s)
 static
 void usage(int exit_code)
 {
-  fprintf(stderr, "Usage: %s <verbosity-level> [ <constant> ... ]\n"
-	  "  verbosity-level 0,1,2\n"
-	  "  num: a positive integer\n", PROGRAM);
+  fprintf(stderr,
+	  "Usage: \n"
+	  "  %s <verbosity-level> [ <constant> ... ]\n"
+	  "  %s -V | --version \n"
+	  "  %s -h | | -? --help \n"
+	  "\n"
+	  "<verbosity-level> is an integer from 0..3;\n"
+	  "<constant> is a positive integer\n",
+	  PROGRAM, PROGRAM, PROGRAM);
   exit(exit_code);
 }
 
 
 int main(int argc, char **argv)
 {
-  char *endptr, *verbosity_str;
+  char *endptr;
+  const char *first_arg = argv[1];
   NODE *node;
 
+
   if ( (argc < 2) ||
-       (strcoll(argv[1], "-h") == 0 ||
-	strcoll(argv[1], "--help") == 0 ||
-	strcoll(argv[1], "-?") == 0) )
+       (strcoll(first_arg, "-h") == 0 ||
+	strcoll(first_arg, "--help") == 0 ||
+	strcoll(first_arg, "-?") == 0) )
     usage(EXIT_USAGE);
 
-  verbosity_str = argv[1];
-  verbosity = strtol(verbosity_str, &endptr, 10);
+  if ( (strcoll(first_arg, "-V") == 0) ||
+       (strcoll(first_arg, "--version") == 0) ) {
+    printf("%s, version %s\n", PROGRAM, VERSION);
+    exit(EXIT_SUCCESS);
+  }
+
+  verbosity = strtol(first_arg, &endptr, 10);
 
   /* Check for various possible errors */
   if ((errno == ERANGE && (verbosity == LONG_MAX || verbosity == LONG_MIN))
@@ -62,8 +75,8 @@ int main(int argc, char **argv)
     exit(EXIT_BADMODE);
   }
 
-  if (endptr == verbosity_str) {
-    fprintf(stderr, "No digits for verbosity were found in '%s'.\n", verbosity_str);
+  if (endptr == first_arg) {
+    fprintf(stderr, "No digits for verbosity were found in '%s'.\n", first_arg);
     usage(EXIT_BADMODE);
   }
 
@@ -88,5 +101,5 @@ int main(int argc, char **argv)
       };
     }
 
-  return EXIT_OK;
+  return EXIT_SUCCESS;
 }
