@@ -38,11 +38,7 @@ typedef unsigned long int VALUE;
 #define MAXNON 65536
 #endif
 
-#ifdef PRUNE
 #define PLIMIT , &limit
-#else
-#define PLIMIT
-#endif
 
 #define odd(n) ((n) & 1)
 #define even(n) (!odd(n))
@@ -60,17 +56,11 @@ typedef struct node {
 
 extern void init_hash(void);
 
-#ifdef PRUNE
 NODE *get_node(VALUE n, unsigned int limit);
 void try(VALUE n, NODE *node, OP opcode,
     unsigned int cost, unsigned int shift, unsigned int *limit);
-#else
-NODE *get_node(VALUE n);
-void try(VALUE n, NODE *node, OP opcode,
-    unsigned int cost, unsigned int shift);
-#endif
 
-extern void spe_mult(VALUE n);
+extern unsigned int spe_mult(VALUE n, NODE *node);
 
 extern long int non;   /* number of nodes */
 extern int verbosity;  /* verbosity level, 0..2 */

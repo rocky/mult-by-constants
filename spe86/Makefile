@@ -1,13 +1,11 @@
 # A GNU C Makefile
-.PHONY: all clean mult-spe86
+.PHONY: all clean mult-spe86 test-mult check
 
-all: mult-spe86
+all: mult-spe86 check
 
-
-# Add COPTS -DPRUNE to prune the tree.
 # Add COPTS -DNCALLS to get the number of get_node() and try() calls.
 
-COPTS=-DPRUNE -ggdb
+COPTS=-ggdb
 
 #: V. Lefèvre's implementation of My Software: Practice & Experience Paper
 mult-spe86: main.o spe_mult.o
@@ -19,11 +17,19 @@ mult-spe86: main.o spe_mult.o
 main.c: spe_mult.h
 spe_mult.c: spe_mult.h
 
+#: Build the main command-line utility
+test-mult: test_mult.o spe_mult.o
+	gcc $(COPTS) spe_mult.o test_mult.o -o $@
+
+#: Run tests
+check: test-mult
+	./test-mult
+
 #: Sample run of Multiplication code on 51
 example: mult-spe86
 	./$< 1 102
 
+BINS=mult-spe86 test-mult
+FILES=$(BINS) *.o
 clean:
-	[ -e mult-spe86 ] && rm mult-spe86 || true
-	[ -e main.o ] && rm main.o
-	[ -e spe_mult.o ] && rm spe_mult.o
+	for file in $(FILES); do  [ -e $$file ] && rm $$file; done

@@ -4,7 +4,6 @@
  *
  * Usage: mult-spe86 <verbosity={0 | 1 | 2} [ <constant> ... ]
  *
- * Compile with -DPRUNE to prune the tree.
  * Compile with -DNCALLS to get the number of get_node() and try() calls.
  */
 
@@ -19,6 +18,27 @@ int verbosity;
 #ifdef NCALLS
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
 #endif
+
+extern void
+print_sequence(VALUE n, NODE *node, unsigned int cost,
+               long unsigned int initial_shift, int verbosity)
+{
+
+  printf("Cost(%" VALUEFMT ") = %u\n", n, cost);
+  if (verbosity >= 0) {
+    unsigned int i = emit_code(node);
+    if (initial_shift > 0) {
+      printf("%9lu: u%u = u%u << %lu\n", n, i, i-1, initial_shift);
+    }
+  }
+
+#ifdef NCALLS
+  printf("%lu calls to get_node()\n", ngn);
+  printf("%lu calls to try()\n", ntry);
+  printf("%lu calls to malloc()\n", nmalloc);
+#endif
+  fflush(stdout);
+}
 
 extern
 void init_hash(void)
@@ -46,11 +66,7 @@ void init_hash(void)
   errexit("internal error ('non' too high)!", EXIT_INTERROR);
 }
 
-#ifdef PRUNE
 NODE *get_node(VALUE n, int unsigned limit)
-#else
-NODE *get_node(VALUE n)
-#endif
 {
   unsigned int hash;
   NODE *node;
@@ -63,11 +79,7 @@ NODE *get_node(VALUE n)
 #endif
 
   if (verbosity >= 2)
-#ifdef PRUNE
     printf("get_node %" VALUEFMT " %u\n", n, limit);
-#else
-    printf("get_node %" VALUEFMT "\n", n);
-#endif
 
   hash = n % HASH_SIZE;
   node = hash_table[hash];
@@ -103,10 +115,9 @@ NODE *get_node(VALUE n)
   node->value = n;
   node->next = hash_table[hash];
   hash_table[hash] = node;
-#ifdef PRUNE
   node->opcode = INVALID;
  validate_node:
-#endif
+
 
   if (n == 1)
     {
@@ -118,10 +129,9 @@ NODE *get_node(VALUE n)
       VALUE d = 4, dsup;
       int shift = 2;
       dsup = n >> 1;
-#ifdef PRUNE
       node->cost = limit + 1;  /* Lower bound on the cost in case the
                                   following calls to try would fail.  */
-#endif
+
       while (d <= dsup)
         {
           if (n % (d - 1) == 0)
@@ -138,13 +148,8 @@ NODE *get_node(VALUE n)
   return node;
 }
 
-#ifdef PRUNE
 void try(VALUE n, NODE *node, OP opcode,
          unsigned int cost, unsigned int shift, unsigned int *limit)
-#else
-void try(VALUE n, NODE *node, OP opcode,
-         unsigned int cost, unsigned int shift)
-#endif
 {
   NODE *tmp_node;
 
@@ -162,30 +167,25 @@ void try(VALUE n, NODE *node, OP opcode,
       shift++;
     }
 
-#ifdef PRUNE
   if (cost > *limit)
     return;
   tmp_node = get_node(n, *limit - cost);
   if (tmp_node->opcode == INVALID)
     return;
-#else
-  tmp_node = get_node(n);
-#endif
 
   cost += tmp_node->cost;
-#ifdef PRUNE
   if (cost > *limit)
     return;
-#endif
+
   if (!node->parent || cost < node->cost)
     {
       node->parent = tmp_node;
       node->cost = cost;
       node->opcode = opcode;
       node->shift = shift;
-#ifdef PRUNE
+
       *limit = cost - 1;
-#endif
+
       if (verbosity >= 2)
         printf("node %" VALUEFMT ": parent %" VALUEFMT ", opcode %d, "
                "shift count %u, cost %u\n", node->value,
@@ -205,21 +205,20 @@ unsigned int make_odd(VALUE *n) {
 }
 
 extern
-void spe_mult(VALUE n)
+unsigned int spe_mult(VALUE n, NODE *node)
 {
-  NODE *node;
-#ifdef PRUNE
+  const NODE *orig_node = node;
+
   VALUE p;
   unsigned int limit = 0;
-#endif
 
   VALUE orig_n = n;
+
   long unsigned initial_shift = make_odd(&n);
 
   if (non > MAXNON)
     init_hash();
 
-#ifdef PRUNE
   p = n >> 1;
   while (p)  /* count the number of 1's in p */
     {
@@ -227,28 +226,14 @@ void spe_mult(VALUE n)
       p &= p-1;
     }
   node = get_node(n, limit);
-#else
-  node = get_node(n);
-#endif
 
   unsigned int cost = node->cost * 2;
   if (initial_shift > 0) {
     cost += 1;
   }
 
-  printf("Cost(%" VALUEFMT ") = %u\n", orig_n, cost);
-  if (verbosity) {
-    unsigned int i = emit_code(node);
-    if (initial_shift > 0) {
-      printf("%9lu: u%u = u%u << %lu\n", orig_n, i, i-1, initial_shift);
-    }
-  }
-#ifdef NCALLS
-  printf("%lu calls to get_node()\n", ngn);
-  printf("%lu calls to try()\n", ntry);
-  printf("%lu calls to malloc()\n", nmalloc);
-#endif
-  fflush(stdout);
+  print_sequence(orig_n, node, cost, initial_shift, verbosity);
+  return cost;
 }
 
 extern

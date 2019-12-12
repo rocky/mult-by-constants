@@ -4,7 +4,6 @@
  *
  * Usage: mult-spe86 <verbosity={0 | 1 | 2} [ <constant> ... ]
  *
- * Compile with -DPRUNE to prune the tree.
  * Compile with -DNCALLS to get the number of get_node() and try() calls.
  * This is the main program
  */
@@ -45,6 +44,7 @@ void usage(int exit_code)
 int main(int argc, char **argv)
 {
   char *endptr, *verbosity_str;
+  NODE *node;
 
   if ( (argc < 2) ||
        (strcoll(argv[1], "-h") == 0 ||
@@ -73,16 +73,16 @@ int main(int argc, char **argv)
     {
       unsigned int i;
       for (i = 2; i < argc; i++)
-        spe_mult(string_to_value(argv[i]));
+        (void) spe_mult(string_to_value(argv[i]), node);
     }
   else
     {
       char buffer[64];
-      printf("Note: the verbosity level set to %d\n", verbosity);
+      printf("Note: the verbosity level set to %d.\n", verbosity);
       while (1) {
 	  printf("Enter a positive number (or Ctrl-d to exit): ");
 	  if (scanf("%63s", buffer) == 1)
-	    spe_mult(string_to_value(buffer));
+	    spe_mult(string_to_value(buffer), node);
 	  else
 	    break;
       };
