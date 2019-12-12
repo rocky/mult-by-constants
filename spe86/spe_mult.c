@@ -230,14 +230,14 @@ unsigned int make_odd(VALUE *n) {
 }
 
 extern
-COST spe_mult(VALUE n, NODE *node)
+COST spe_mult(VALUE n, NODE *node, unsigned int *initial_shift)
 {
   VALUE p;
   COST limit = 0;
 
   VALUE orig_n = n;
 
-  long unsigned initial_shift = make_odd(&n);
+  *initial_shift = make_odd(&n);
 
   if (non > MAXNON || non == -1) {
     if (non == -1)
@@ -254,11 +254,11 @@ COST spe_mult(VALUE n, NODE *node)
   node = get_node(n, limit);
 
   COST cost = node->cost * (COST) 2;
-  if (initial_shift > 0) {
+  if (*initial_shift > 0) {
     cost += (COST) 1;
   }
 
-  print_sequence(orig_n, node, cost, initial_shift, verbosity);
+  print_sequence(orig_n, node, cost, *initial_shift, verbosity);
   return cost;
 }
 

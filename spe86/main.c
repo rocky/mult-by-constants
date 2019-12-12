@@ -56,8 +56,10 @@ int main(int argc, char **argv)
 {
   char *endptr;
   const char *first_arg = argv[1];
-  NODE *node = NULL;
 
+  /* The following are returned as a result of searching for a multiplication sequence. */
+  NODE *node = NULL;
+  unsigned int initial_shift = 0;
 
   if ( (argc < 2) ||
        (strcoll(first_arg, "-h") == 0 ||
@@ -88,8 +90,9 @@ int main(int argc, char **argv)
   if (argc > 2)
     {
       unsigned int i;
+
       for (i = 2; i < argc; i++)
-        (void) spe_mult(string_to_value(argv[i]), node);
+        (void) spe_mult(string_to_value(argv[i]), node, &initial_shift);
     }
   else
     {
@@ -98,7 +101,7 @@ int main(int argc, char **argv)
       while (1) {
 	  printf("Enter a positive number (or Ctrl-d to exit): ");
 	  if (scanf("%63s", buffer) == 1)
-	    spe_mult(string_to_value(buffer), node);
+	    spe_mult(string_to_value(buffer), node, &initial_shift);
 	  else
 	    break;
       };

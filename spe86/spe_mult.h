@@ -65,7 +65,7 @@ typedef struct node {
 extern void init_hash(void);
 extern unsigned int make_odd(VALUE *n);
 
-extern COST spe_mult(VALUE n, /*out*/ NODE *node);
+extern COST spe_mult(VALUE n, /*out*/ NODE *node, /*out*/ unsigned int *initial_shift);
 
 extern long int non;   /* number of nodes */
 extern int verbosity;  /* verbosity level, 0..2 */

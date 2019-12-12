@@ -60,15 +60,14 @@ To search sequence inside C code, here is an example of using the API:
 #include "spe_mult.h"
 
 ...
-    NODE *node = NULL; // Stores instruction sequence
+    /* The following are returned as a result of searching for a multiplication sequence. */
+    NODE *node = NULL;
+	unsigned int intial_shift = 0;
+
     VALUE n = 123455;  // Adjust this to the multilier you want an instruction sequence for
-    COST cost = spe_mult(n, node); // Find a multiplication sequence!
+    COST cost = spe_mult(n, node, &initial_shift); // Find a multiplication sequence!
 
-    /* When the API is cleaned up, you won't need the next two lines. */
-    VALUE odd_n = n;
-    unsigned int shift_amount = make_odd(odd_n);
-
-    print_sequence(n, node, shift_amount, 1); // Print instruction sequence.
+    print_sequence(n, node, initial_shift, 1); // Print instruction sequence.
 ```
 
 Above, `node` will contain a pointer structure for the instruction sequence;
