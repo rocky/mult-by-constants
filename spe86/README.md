@@ -6,4 +6,4 @@ Sometime around 1983 or so, I was working in that compiler group when my manager
 
 One change I made was to add alpha-beta cutoffs in its instruction sequence-searching. However at the time I didn't know that this is what I had done. I didn't explain that well in my SP&E paper.
 
-The code here starts with V. Lefèvre's implementation, for which I am grateful.
+The code here starts with V. Lefèvre's implementation, for which I am grateful. In addition to the alpha-beta searching mentioned above, the original code I wrote handled negative numbers as well as even number which were omitted Lefèvre's last implimenation. I've added that back in here.
