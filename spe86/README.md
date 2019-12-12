@@ -68,7 +68,7 @@ To search sequence inside C code, here is an example of using the API:
     VALUE odd_n = n;
     unsigned int shift_amount = make_odd(odd_n);
 
-    print(sequence(n, node, shift_amount, 1); // Print instruction sequence.
+    print_sequence(n, node, shift_amount, 1); // Print instruction sequence.
 ```
 
 Above, `node` will contain a pointer structure for the instruction sequence;
