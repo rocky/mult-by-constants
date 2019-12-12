@@ -16,11 +16,18 @@ PHONY=all check clean pytest type-check distclean lint flake8 test rmChangeLog c
 all: check
 
 #: Run all tests - type check and pytest
-check: type-check pytest
+check: type-check check-python check-spe86
 
-#: Run pytest tests
-pytest:
+#: Same thing as "make check"
+test: check
+
+#: Run Python (pytest) tests
+check-python pytest:
 	py.test pytest
+
+#: Run Software -- Practice and Experience C code tests
+check-spe86:
+	cd spe86 && make check
 
 #: Static type checking
 type-check:

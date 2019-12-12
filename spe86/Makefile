@@ -26,6 +26,9 @@ test-mult: test_mult.o spe_mult.o
 check: test-mult
 	./test-mult
 
+#: Same thing as "make check"
+test: check
+
 #: Sample run of Multiplication code on 51
 example: mult-spe86
 	./$< 1 102
