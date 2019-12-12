@@ -1,0 +1,40 @@
+#!/usr/local/bin/perl
+
+use strict;
+
+my $RCSID = '$Id: qavinfo 1.1 2000/12/03 17:39:17 vlefevre Exp lefevre $';
+
+&info(2.6, 4.4, 8.0, 14.5, 26.3, 47.6, 86.5, 157.7, 290.0, 536.9, 1001.9);
+&info(2.6, 4.4, 7.6, 13.4, 23.7, 42.2, 75.5, 135.4, 243.3, 440.3,  802.8);
+
+sub info
+  { my @a = @_;
+
+    print "Ratio:";
+    foreach (1..$#a)
+      { printf " %.3f", $a[$_] / $a[$_-1] }
+
+    my @moq;
+    print "\n\n k m=2^k  m/qav\n";
+    foreach (0..$#a)
+      {
+        my $k = $_ + 3;
+        my $m = 1 << $k;
+        my $moq = $m / $a[$_];
+        push @moq, $moq;
+        printf "%2d %5d  %.3f\n", $k, $m, $moq;
+      }
+    print "\n";
+    &delta(2,0,@moq);
+
+    print "\n\n"; }
+
+sub delta
+  {
+    my ($i,$s,@a) = @_;
+    print ' ' x $s;
+    foreach (@a)
+      { printf "  %+.3f", $_ }
+    print "\n";
+    $i and &delta($i-1, $s+4, map { $a[$_] - $a[$_-1] } 1..$#a);
+  }
