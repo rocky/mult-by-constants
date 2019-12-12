@@ -42,6 +42,8 @@ with open(out_path, "w") as out:
     dump_csv(mcache)             # Output as CSV for data analysis
 ```
 
+See also the [_spe86_](./spe86) directory for a C API.
+
 Command-line utility:
 
 ```console
@@ -49,6 +51,7 @@ $ mult-by-const 51  # Get instruction sequence to multiply by 51
 $ mult-by-const -to 100  # Get instruction sequences for positive numbers up to 100
 ```
 
+See also the directories [_spe86_](./spe86) and [_vin17/rigo_](./vin17/rigo) for C programs.
 
 Introduction
 ============

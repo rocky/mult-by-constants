@@ -63,9 +63,12 @@ To search sequence inside C code, here is an example of using the API:
     NODE *node = NULL; // Stores instruction sequence
     VALUE n = 123455;  // Adjust this to the multilier you want an instruction sequence for
     COST cost = spe_mult(n, node); // Find a multiplication sequence!
-	VALUE odd_n = n;
-	unsigned int shift_amount = make_odd(n);
-	print(sequence(n, node, shift_amount, 1); // Print instruction sequence.
+
+    /* When the API is cleaned up, you won't need the next two lines. */
+    VALUE odd_n = n;
+    unsigned int shift_amount = make_odd(odd_n);
+
+    print(sequence(n, node, shift_amount, 1); // Print instruction sequence.
 ```
 
 Above, `node` will contain a pointer structure for the instruction sequence;
