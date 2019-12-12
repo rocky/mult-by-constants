@@ -29,7 +29,7 @@ int main(int argc, char **argv)
   int expected_cost[] = {4, 3};
 
   for (int i = 0; i < ARRAY_SIZE(values); i++) {
-    NODE *node;
+    NODE *node = NULL;
     int n = values[i];
     unsigned int cost = spe_mult(n, node);
     check_costs(n, cost, expected_cost[i]);

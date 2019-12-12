@@ -19,6 +19,11 @@ const char *OP2NAME[FSUB+1] =
    "INVALID", "NOOP", "add(1)", "subtract(1)", "add(n)", "subtract(n)"
   };
 
+static int errexit(const char* msg, int exit_code) {
+  fprintf(stderr, "%s: %s\n", PROGRAM, msg);
+  exit(exit_code);
+}
+
 NODE *get_node(VALUE n, COST limit);
 void try(VALUE n, NODE *node, OP opcode,
     COST cost, unsigned int shift, COST *limit);
@@ -128,7 +133,9 @@ NODE *get_node(VALUE n, COST limit)
   node->next = hash_table[hash];
   hash_table[hash] = node;
   node->opcode = INVALID;
+#ifdef PRUNE
  validate_node:
+#endif
 
 
   if (n == 1)
@@ -219,8 +226,6 @@ unsigned int make_odd(VALUE *n) {
 extern
 COST spe_mult(VALUE n, NODE *node)
 {
-  const NODE *orig_node = node;
-
   VALUE p;
   COST limit = 0;
 

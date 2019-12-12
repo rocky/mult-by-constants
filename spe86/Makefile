@@ -5,7 +5,7 @@ all: mult-spe86 check
 
 # Add COPTS -DNCALLS to get the number of get_node() and try() calls.
 
-COPTS=-ggdb
+COPTS ?= -ggdb
 
 #: V. Lefèvre's implementation of My Software: Practice & Experience Paper
 mult-spe86: main.o spe_mult.o

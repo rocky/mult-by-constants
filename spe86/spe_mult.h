@@ -71,11 +71,6 @@ extern int verbosity;  /* verbosity level, 0..2 */
 extern NODE *hash_table[HASH_SIZE];
 
 
-static int errexit(const char* msg, int exit_code) {
-  fprintf(stderr, "%s: %s\n", PROGRAM, msg);
-  exit(exit_code);
-}
-
 enum { EXIT_OK, EXIT_MEMORY, EXIT_USAGE, EXIT_BADMODE, EXIT_BADCONST,
        EXIT_INTERROR, EXIT_OVERFLOW };
 

@@ -2,7 +2,7 @@
  *
  * Multiplication by a Constant -- Rocky Bernstein's 1986 Software Practice and Expereince paper
  *
- * Usage: mult-spe86 <verbosity={0 | 1 | 2} [ <constant> ... ]
+ * Usage: mult-spe86 <verbosity={0..3}> [ <constant> ... ]
  *
  * Compile with -DNCALLS to get the number of get_node() and try() calls.
  * This is the main program
@@ -15,6 +15,11 @@
 #ifdef NCALLS
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
 #endif
+
+static int errexit(const char* msg, int exit_code) {
+  fprintf(stderr, "%s: %s\n", PROGRAM, msg);
+  exit(exit_code);
+}
 
 static
 VALUE string_to_value(char *s)
@@ -51,7 +56,7 @@ int main(int argc, char **argv)
 {
   char *endptr;
   const char *first_arg = argv[1];
-  NODE *node;
+  NODE *node = NULL;
 
 
   if ( (argc < 2) ||
