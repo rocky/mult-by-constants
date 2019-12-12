@@ -1,0 +1,33 @@
+from mult_by_const import MultConst
+from mult_by_const.instruction import instruction_sequence_cost, print_instructions
+import os
+
+
+def test_factor():
+    debug = "DEBUG" in os.environ
+    mconst = MultConst(debug=debug)
+    for clear_cache in (False, True):
+        for n, expected_cost in (
+            (41, 4),
+            (95, 4),
+            (51, 4),
+            (340, 5),
+            (341, 6),
+            (342, 7),
+            (343, 6),
+            (12345678, 13),
+        ):
+            cost, instrs = mconst.find_mult_sequence(n)
+            if debug:
+                print_instructions(instrs, n, cost)
+            assert (
+                expected_cost == cost
+            ), f"for {n} expected cost: {expected_cost}; got: {cost}"
+            assert instruction_sequence_cost(instrs) == cost
+            if clear_cache:
+                mconst.mult_cache.clear()
+
+
+# If run as standalone
+if __name__ == "__main__":
+    test_factor()

@@ -1,0 +1,6 @@
+*.o
+*~
+/.cache
+ChangeLog
+__pycache__
+nohup.out
