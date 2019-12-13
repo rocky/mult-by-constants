@@ -24,7 +24,7 @@ static void check_costs(VALUE n, const char method[], COST got, COST expected,
   }
   if (shift_got != shift_expected) {
     fprintf(stderr,
-	    "Usign method %s for number %" VALUEFMT
+	    "Using method %s for number %" VALUEFMT
 	    ", expecting shift %u, got %u instead.\n",
 	    method, n, shift_expected, shift_got);
     exit(EXIT_FAILURE);
@@ -34,18 +34,18 @@ static void check_costs(VALUE n, const char method[], COST got, COST expected,
 int main(int argc, char **argv)
 {
   int values[] = {16, 51, 10};
-  int expected_binary_cost[] = {1, 6, 4};
   int expected_cost[] = {1, 4, 3};
   int expected_shift[] = {4, 0, 1};
+  int expected_binary_cost_to8[] = {1, 0, 1, 2, 1, 2, 3, 4, 1};
+
   NODE *node = NULL;
   unsigned int initial_shift = 0;
 
   // Test binary cost method
-  for (int i = 0; i < ARRAY_SIZE(values); i++) {
-    int n = values[i];
-    unsigned int cost = binary_mult_cost(n);
-    check_costs(n, "binary method", cost, expected_binary_cost[i],
-		expected_shift[i], expected_shift[i]);
+  for (int n = 0; n < ARRAY_SIZE(expected_binary_cost_to8); n++) {
+    COST cost = binary_mult_cost((VALUE) n);
+    check_costs(n, "binary method", cost, expected_binary_cost_to8[n],
+  		0, 0);
   }
 
   // Test SPE multiplication method
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     int n = values[i];
     unsigned int cost = spe_mult(n, node, &initial_shift);
     check_costs(n, "spe method", cost, expected_cost[i],
-		initial_shift, expected_shift[i]);
+  		initial_shift, expected_shift[i]);
   }
   return EXIT_OK;
 }

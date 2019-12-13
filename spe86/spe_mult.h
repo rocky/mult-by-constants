@@ -51,8 +51,8 @@ typedef unsigned long int VALUE;
 #endif
 
 /* The cost of multiplication by 0. */
-#ifndef BYZERO_COST
-#define BYZERO_COST ((COST) 1)
+#ifndef MAKEZERO_COST
+#define MAKEZERO_COST ((COST) 1)
 #endif
 
 /* The cost of a multiplication by 1. */

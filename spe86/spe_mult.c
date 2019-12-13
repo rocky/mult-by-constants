@@ -247,30 +247,37 @@ unsigned int make_even(VALUE *n) {
 extern
 COST binary_mult_cost(VALUE n)
 {
-  if (n == (VALUE) 0) return BYZERO_COST;
+  if (n == (VALUE) 0) return MAKEZERO_COST;
   if (n == (VALUE) 1) return BYONE_COST;
 
   assert(n > (VALUE) 0);
 
   {
-    /* count the one minus the number of 1's in n. */
     COST cost = (VALUE) 0;
     VALUE p;
+    unsigned int final_shift = 0;
     if (even(n)) {
       /* FIXME: When we allow costs per shift amount, the return value of make_odd would
          go into the shift cost, somehow. */
-      (void) make_odd(&n);
-      if (n == (VALUE) 1) return SHIFT_COST;
+      final_shift = make_odd(&n);
       p = n;
-    } else {
-      p = n >> 1;
     }
+
+    /*
+       n is odd now.  When there is no "subtract" op, drop off the
+       least-significant one bit and then and every other one bit is
+       an "add" to get that bit set followed by a "shift".  to
+       position the bit in place.
+    */
+    p = n >> 1;
     while (p) {
       if (odd(p)) {
         cost += SHIFT_COST + ADD_COST;
       }
       p >>= 1;
     }
+    if (final_shift)
+      cost += SHIFT_COST;
     return cost;
   }
 }
