@@ -124,7 +124,7 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
                 i -= 1
             else:
                 i -= j
-        elif instr.op == "constant":
+        elif instr.op == "makezero":
             return 0
         elif instr.op == "noop":
             pass

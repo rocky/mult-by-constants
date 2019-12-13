@@ -6,8 +6,7 @@ OP_COSTS_DEFAULT = {
     "shift": 1,
     "add": 1,
     "subtract": 1,
+    "makezero": 1,
     "noop": 0,
-    "const": 1,
-    "zero": 1,
     # "shift_add" = 1  # old RISC machines have this
 }

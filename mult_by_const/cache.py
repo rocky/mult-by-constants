@@ -72,8 +72,8 @@ class MultCache:
         # Dictionaries keys in Python 3.8+ are in given in insertion order,
         # so we should insert 0 before 1.
         self.cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {
-            0: (1, 1, True, [Instruction("constant", 0)]),
-            1: (0, 0, True, [Instruction("noop", 0, 0)]),
+            0: (1, 1, True, [Instruction("makezero", 0, self.costs["makezero"])]),
+            1: (0, 0, True, [Instruction("noop", 0, self.costs["noop"])]),
         }
         # The following help with search statistics
         self.hits_exact = 0

@@ -261,7 +261,8 @@ class MultConst:
         """
 
         if n == 0:
-            return self.op_costs["zero"], [Instruction("const", 0, self.op_costs["const"])]
+            return self.op_costs["makezero"], [Instruction("makezero", 0,
+                                                           self.op_costs["makezero"])]
 
         # FIXME allow negative numbers too.
         assert n > 0, "We handle only positive numbers for now"
