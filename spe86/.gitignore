@@ -1,3 +1,4 @@
+*.o
 /mult-spe86
 /test-mult
-*.o
+/tmp

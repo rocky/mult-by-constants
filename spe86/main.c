@@ -102,9 +102,6 @@ int main(int argc, char **argv)
 	if (binary_cost_only) {
 	  VALUE n = string_to_value(argv[i]);
 	  COST cost = binary_mult_cost(n);
-	  printf("%" VALUEFMT " = ", n);
-	  print_binary_value(n);
-	  printf("\n");
 	  print_cost(n, cost);
 	} else {
 	  (void) spe_mult(string_to_value(argv[i]), node, &initial_shift);
@@ -126,9 +123,6 @@ int main(int argc, char **argv)
 	    if (binary_cost_only) {
 	      VALUE n = string_to_value(buffer);
 	      COST cost = binary_mult_cost(n);
-	      printf("%" VALUEFMT " = ", n);
-	      print_binary_value(n);
-	      printf("\n");
 	      print_cost(n, cost);
 	    } else {
 	      spe_mult(string_to_value(buffer), node, &initial_shift);
