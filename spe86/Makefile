@@ -8,19 +8,20 @@ all: mult-spe86 check
 COPTS ?= -ggdb
 
 #: V. Lefèvre's implementation of My Software: Practice & Experience Paper
-mult-spe86: main.o spe_mult.o
-	gcc $(COPTS) spe_mult.o main.o -o $@
+mult-spe86:  util.o spe_mult.o main.o
+	gcc $(COPTS) util.o spe_mult.o main.o -o $@
 
 .c.o:
 	gcc $(COPTS) $< -c -o $@
 
+util.c: util.h
 main.c: spe_mult.h
 spe_mult.c: spe_mult.h
 test_mult.c: spe_mult.h
 
 #: Build the main command-line utility
-test-mult: test_mult.o spe_mult.o
-	gcc $(COPTS) spe_mult.o test_mult.o -o $@
+test-mult: util.o spe_mult.o test_mult.o
+	gcc $(COPTS) util.o spe_mult.o test_mult.o -o $@
 
 #: Run tests
 check: test-mult

@@ -9,17 +9,9 @@
  */
 
 #include "spe_mult.h"
+#include "util.h"
 #include <string.h>
 #include <stdbool.h>
-
-#ifdef NCALLS
-static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
-#endif
-
-static int errexit(const char* msg, int exit_code) {
-  fprintf(stderr, "%s: %s\n", PROGRAM, msg);
-  exit(exit_code);
-}
 
 static
 VALUE string_to_value(char *s)
@@ -35,7 +27,6 @@ VALUE string_to_value(char *s)
     }
   return n;
 }
-
 static
 void usage(int exit_code)
 {

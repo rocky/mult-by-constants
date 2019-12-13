@@ -3,7 +3,9 @@
  * Test program for mult_spe() function.
  */
 
+#include <string.h>
 #include "spe_mult.h"
+#include "util.h"
 
 #ifdef NCALLS
 static unsigned long int ngn = 0, ntry = 0, nmalloc = 0;
@@ -41,6 +43,39 @@ int main(int argc, char **argv)
   NODE *node = NULL;
   unsigned int initial_shift = 0;
 
+  const char* bin_strings[] =
+    {
+     "0",
+     "1",
+     "10",
+     "11",
+     "100",
+     "101",
+     "110",
+     "111",
+     "1000",
+     "1001",
+     "1010",
+     "1011",
+     "1100",
+     "1101",
+     "1110",
+     "1111",
+     "10000"
+    };
+
+  int exit_rc = EXIT_OK;
+  // Test format_binary-value
+  for (int i=0; i <= 16; i++) {
+    char *str = format_binary_value(i);
+    if (strncmp(str, bin_strings[i], strlen(str)) != 0) {
+      printf("format_binary_value: got %s, expected %s\n",
+	     str, bin_strings[i]);
+      exit_rc = EXIT_FAILURE;
+    }
+
+  }
+
   // Test binary cost method
   for (int n = 0; n < ARRAY_SIZE(expected_binary_cost_to8); n++) {
     COST cost = binary_mult_cost((VALUE) n);
@@ -55,5 +90,5 @@ int main(int argc, char **argv)
     check_costs(n, "spe method", cost, expected_cost[i],
   		initial_shift, expected_shift[i]);
   }
-  return EXIT_OK;
+  return exit_rc;
 }
