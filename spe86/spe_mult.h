@@ -72,8 +72,6 @@ typedef unsigned long int VALUE;
 #define MAXNON 65536
 #endif
 
-#define PLIMIT , &limit
-
 #define odd(n) ((n) & 1)
 #define even(n) (!odd(n))
 

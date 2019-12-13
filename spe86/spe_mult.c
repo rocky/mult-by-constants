@@ -180,14 +180,14 @@ NODE *get_node(VALUE n, COST limit)
       while (d <= dsup)
         {
           if (n % (d - 1) == 0)
-            try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST, shift PLIMIT);
+            try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST, shift, &limit);
           if (n % (d + 1) == 0)
-            try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST, shift PLIMIT);
+            try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST, shift, &limit);
           d <<= 1;
           shift++;
         }
-      try(n - 1, node, ADD1, ADD_COST, 0 PLIMIT);
-      try(n + 1, node, SUB1, SUB_COST, 0 PLIMIT);
+      try(n - 1, node, ADD1, ADD_COST, 0, &limit);
+      try(n + 1, node, SUB1, SUB_COST, 0, &limit);
     }
 
   return node;
@@ -198,6 +198,12 @@ void try(VALUE n, NODE *node, OP opcode,
 {
   NODE *tmp_node;
   unsigned int shift_amount = make_odd(&n);
+
+  /* This was not called via factoring.
+     FIXME: there must be a better way to structure this.
+  */
+  if (shift == 0)
+    shift = shift_amount;
 
 #ifdef NCALLS
   if (++ntry == 0)
