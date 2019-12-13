@@ -101,7 +101,7 @@ NODE *get_node(VALUE n, COST limit)
     for (int i=0; i < 2*call_nesting; i++) {
       putchar(' ');
     }
-    printf("get_node %" VALUEFMT " %" COSTFMT "\n", n, limit);
+    printf("get_node %" VALUEFMT " with max cost: %" COSTFMT "\n", n, limit);
   }
 
   hash = n % HASH_SIZE;
