@@ -5,7 +5,8 @@ from mult_by_const.util import bin2str, print_sep
 
 FACTOR_FLAG = -1
 
-OP2SHORT = {"add": "+", "subtract": "-", "shift": "<<"}
+
+OP2SHORT = {"add": "+", "makezero": "0", "negate": "(-n)", "shift": "<<", "subtract": "-"}
 SHORT2OP = {v:k for k, v in OP2SHORT.items()}
 
 
@@ -29,11 +30,11 @@ class Instruction:
         op_str = OP2SHORT.get(self.op, self.op)
         if self.op == "shift":
             return f"{op_str} {self.amount}"
+        elif self.op in ("makezero", "negate"):
+            return op_str
         elif self.op in ("add", "subtract"):
-            operand = "(n)" if self.amount == FACTOR_FLAG else "1"
+            operand = "n" if self.amount == FACTOR_FLAG else "1"
             return f"{op_str}{operand}"
-        elif self.op == "noop":
-            return f"{op_str}"
         else:
             return f"{op_str} {self.amount}"
 
@@ -41,6 +42,10 @@ class Instruction:
         op_str = self.op
         if self.op in ("add", "subtract"):
             op_str += "(n)" if self.amount == FACTOR_FLAG else "(1)"
+        elif self.op == "makezero":
+            op_str = "0"
+        elif self.op == "negate":
+            op_str = "negate(n)"
         else:
             op_str = f"{self.op}({self.amount})"
         op_str += ","
@@ -69,10 +74,10 @@ def print_instructions(
             i += 1 if instr.amount == 1 else j
         elif instr.op == "subtract":
             i -= 1 if instr.amount == 1 else j
-        elif instr.op == "constant":
-            pass
-        elif instr.op == "noop":
-            pass
+        elif instr.op == "makezero":
+            i = 0
+        elif instr.op == "negate":
+            i = -i
         else:
             print(f"unknown op {instr.op}")
         print(f"{instr},\tvalue: {i:3}")
@@ -126,8 +131,8 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
                 i -= j
         elif instr.op == "makezero":
             return 0
-        elif instr.op == "noop":
-            pass
+        elif instr.op == "negate":
+            i = -i
         else:
             print(f"unknown op {instr.op}")
         pass
@@ -139,19 +144,16 @@ def str2instruction(s: str) -> Instruction:
     if op_str in ("+", "-"):
         amount = 1 if s[1:2] == "1" else FACTOR_FLAG
         op = SHORT2OP[op_str]
+    elif s in ("(-n)", "0"):
+        amount = 0
+        op = SHORT2OP[s]
     else:
         op_str = s[0:2]
         if op_str == "<<":
             amount = int(s[2:], 10)
             op = SHORT2OP[op_str]
-        elif s == "noop":
-            # Note: need to make cost == 0 explicit
-            return Instruction("noop", 0, 0)
         else:
-            op_str, val_str = s.split(" ")
-            assert op_str == "constant"
-            op = op_str
-            amount = int(val_str)
+            raise RuntimeError(f"Unconvertable string {s}")
     return Instruction(op, amount)
 
 def str2instructions(s: str) -> List[Instruction]:
@@ -165,6 +167,7 @@ if __name__ == "__main__":
         Instruction("add", 1),
         Instruction("shift", 2),
         Instruction("subtract", FACTOR_FLAG),
+        Instruction("negate", 0),
     ]
     print(instrs)
     for inst in instrs:

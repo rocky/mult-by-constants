@@ -260,13 +260,8 @@ class MultConst:
 
         """
 
-        if n == 0:
-            return self.op_costs["makezero"], [Instruction("makezero", 0,
-                                                           self.op_costs["makezero"])]
-
         # FIXME allow negative numbers too.
-        assert n > 0, "We handle only positive numbers for now"
-
+        assert n >= 0, "We handle only positive numbers"
         cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
         if finished:
             return (cache_upper, cache_instr)
@@ -275,9 +270,18 @@ class MultConst:
 
     def binary_sequence_inner(self, n: int) -> Tuple[float, List[Instruction]]:
 
-        assert n > 0
-
+        if n == 0:
+            return self.op_costs["makezero"], [Instruction("makezero", 0,
+                                                           self.op_costs["makezero"])]
         orig_n = n
+
+        if n < 0:
+            is_negative = True
+            n = -n
+        else:
+            is_negative = False
+
+        assert n > 0
 
         bin_instrs: List[Instruction] = []
         cost: float = 0  # total cost of sequence
@@ -317,6 +321,12 @@ class MultConst:
             pass
 
         bin_instrs.reverse()
+
+        if is_negative:
+            negate_cost = self.op_costs["negate"]
+            bin_instrs.append(Instruction("negate", 1, negate_cost))
+            cost += negate_cost
+
         if self.debug:
             self.debug_msg(
                 f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}"
@@ -427,6 +437,13 @@ class MultConst:
         if self.debug:
             self.debug_msg(f"alpha-beta search for {n} with max cost: {upper}", 2)
 
+        assert upper > 0  # or lower < upper
+
+        cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
+        if finished:
+            self.dedent()
+            return cache_upper, cache_instrs
+
         # Variable "lower" tracks the cost of potential instruction
         # sequences used in searching.  It starts off 0 on a new
         # search. As we break apart the number searched, lower
@@ -442,17 +459,9 @@ class MultConst:
 
         lower: float = 0
 
-        assert upper > 0  # or lower < upper
-
-        cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
-        if finished:
-            self.dedent()
-            return cache_upper, cache_instrs
-
         instrs: List[Instruction] = []
         m, shift_cost = self.make_odd(n, 0, instrs)
 
-        # If we were given an even number, then add the shift cost
         # and compute upper bound on the resulting odd number
         if m != n:
             lower += shift_cost
@@ -525,13 +534,17 @@ if __name__ == "__main__":
     from mult_by_const.instruction import print_instructions
     # from mult_by_const.io import dump
 
-    # m = MultConst(debug=True)
-    # cost, instrs = m.binary_sequence(340)
-    # cost, instrs = m.try_shift_op_factor(n, 5, "add", 2, min_cost, 0, [], bin_instrs)
+    mconst = MultConst(debug=True)
+    # cost, instrs = mconst.binary_sequence(340)
+    # cost, instrs = mconst.try_shift_op_factor(n, 5, "add", 2, min_cost, 0, [], bin_instrs)
     # assert min_cost == cost, "5 is not a factor of 27, so we keep old min_cost"
-    # cost, instrs = m.try_shift_op_factor(n, 3, "add", 1, min_cost, 0, [], bin_instrs)
+    # cost, instrs = mconst.try_shift_op_factor(n, 3, "add", 1, min_cost, 0, [], bin_instrs)
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
+
+    for n in [-1, 0, -3]:
+        cost, instrs = mconst.binary_sequence(n)
+        print_instructions(instrs, n, cost)
 
     # for n in [170, 1706] + list(range(340, 345)):
     #     min_cost, instrs = m.binary_sequence(n)
@@ -541,8 +554,8 @@ if __name__ == "__main__":
     #     m.mult_cache.check()
     #     # m.mult_cache.clear()
 
-    n = 78
+    # n = 78
 
-    mconst = MultConst(debug=True)
-    cost, instrs = mconst.find_mult_sequence(n)
-    print_instructions(instrs, n, cost)
+    # mconst = MultConst(debug=True)
+    # cost, instrs = mconst.find_mult_sequence(n)
+    # print_instructions(instrs, n, cost)
