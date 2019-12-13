@@ -17,6 +17,9 @@ NODE *hash_table[HASH_SIZE];
 long int non = -1;
 
 int verbosity = 1;
+
+static int call_nesting = 0;
+
 const char *OP2NAME[FSUB+1] =
   {
    "INVALID", "NOOP", "add(1)", "subtract(1)", "add(n)", "subtract(n)"
@@ -121,8 +124,12 @@ NODE *get_node(VALUE n, COST limit)
     }
 #endif
 
-  if (verbosity >= 3)
+  if (verbosity >= 3) {
+    for (int i=0; i < 2*call_nesting; i++) {
+      putchar(' ');
+    }
     printf("get_node %" VALUEFMT " %" COSTFMT "\n", n, limit);
+  }
 
   hash = n % HASH_SIZE;
   node = hash_table[hash];
@@ -164,6 +171,8 @@ NODE *get_node(VALUE n, COST limit)
 #endif
 
 
+  call_nesting++;
+
   if (n == 1)
     {
       node->cost = 0;
@@ -189,6 +198,8 @@ NODE *get_node(VALUE n, COST limit)
       try(n - 1, node, ADD1, ADD_COST, 0, &limit);
       try(n + 1, node, SUB1, SUB_COST, 0, &limit);
     }
+
+  call_nesting--;
 
   return node;
 }
@@ -234,10 +245,14 @@ void try(VALUE n, NODE *node, OP opcode,
 
       *limit = cost - 1;
 
-      if (verbosity >= 2)
+      if (verbosity >= 2) {
+        for (int i=0; i < 2*call_nesting; i++) {
+          putchar(' ');
+        }
         printf("node %" VALUEFMT ": parent %" VALUEFMT ", %s, "
                "shift count %u, cost %" COSTFMT "\n", node->value,
                node->parent->value, OP2NAME[node->opcode], node->shift, node->cost);
+      }
     }
 }
 

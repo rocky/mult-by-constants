@@ -7,9 +7,11 @@ Although the pseudo code in my paper was Ada-like, the code was originally writt
 
 Sometime around 1983 or so, I was working in that compiler group when my manager Marty Hopkins told me that there was some code Victor Miller wrote to do multiplications that none of the others in the compiler group understood well. So I was told to talk to Victor, figure out how it works, and adapt it for the instruction-costs of the other CPU architectures that the PL.8 compiler supported. I did that, and in the process adapted it in various ways.
 
-One change I made was to add alpha-beta cutoffs to its instruction sequence-searching. However at the time I didn't know that this is what I had done. I didn't explain that well in my SP&E paper.
+Adjusting for instruction-sequence costs were important. On the Motorola 6800, the shift cost took time proportional to the amount shifted. And it was never faster than an "add" operations. Therefore to multiply by 2, an "add" was preferable to a "shift". And to multiply by three, you would build on the multiplication by 2 using another "add", rather than start from 4 and subtracting one. On the other hand if you needed to multiply by _negative_ 3, then using the subtraction with the operand flipped from the positive multiplication case was a win.
 
-The C code here starts with V. Lefèvre's implementation, for which I am grateful. In addition to the alpha-beta searching mentioned above, my additions included handled negative numbers; and even numbers which accepted by Victor's code also accepted. These features were omitted Lefèvre's last implementation, so I've added that back in here.
+Another change I made was to add alpha-beta cutoffs to its instruction sequence-searching. However at the time I didn't know that this is what I had done. I didn't explain that well in my SP&E paper.
+
+The C code here starts with V. Lefèvre's implementation, for which I am grateful. In addition to the alpha-beta searching mentioned above, my additions included handled negative numbers; and even numbers which Victor's code also accepted. Since features were omitted Lefèvre's last implementation, I've added that back in here. There are still a couple of bugs in the code which I hope to fix.
 
 Using
 =====
