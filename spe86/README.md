@@ -11,7 +11,7 @@ Adjusting for instruction-sequence costs were important. On the Motorola 6800, t
 
 Another change I made was to add alpha-beta cutoffs to its instruction sequence-searching. However at the time I didn't know that this is what I had done. I didn't explain that well in my SP&E paper.
 
-The C code here starts with V. Lefèvre's implementation, for which I am grateful. In addition to the alpha-beta searching mentioned above, my additions included handled negative numbers; and even numbers which Victor's code also accepted. Since features were omitted Lefèvre's last implementation, I've added that back in here. There are still a couple of bugs in the code which I hope to fix.
+The C code here starts with V. Lefèvre's implementation, for which I am grateful. In addition to the alpha-beta searching mentioned above, my additions included handled negative numbers; and even numbers which Victor's code also accepted. Since features were omitted Lefèvre's last implementation, I've added that back in here. There are still a couple of bugs in my code which I hope to fix.
 
 Using
 =====
