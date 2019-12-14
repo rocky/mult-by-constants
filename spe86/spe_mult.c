@@ -85,6 +85,15 @@ void init_hash(void)
   errexit("internal error ('non' too high)!", EXIT_INTERROR);
 }
 
+#define TRY_MSG(msg, value)                     \
+  if (verbosity >= 3) {                         \
+    for (int i=0; i < 2*call_nesting; i++) {    \
+      putchar(' ');                             \
+    }                                              \
+    printf("Trying " msg " %" VALUEFMT "\n", value);    \
+  }
+
+
 NODE *get_node(VALUE n, COST limit)
 {
   unsigned int hash;
@@ -161,14 +170,23 @@ NODE *get_node(VALUE n, COST limit)
 
       while (d <= dsup)
         {
-          if (n % (d - 1) == 0)
+          if (n % (d - 1) == 0) {
+            TRY_MSG("factor", d-1)
             try(n / (d - 1), node, FSUB, SHIFT_COST + SUB_COST, shift, &limit);
-          if (n % (d + 1) == 0)
+          }
+          if (n % (d + 1) == 0) {
+            for (int i=0; i < 2*call_nesting; i++) {
+              putchar(' ');
+            }
+            TRY_MSG("factor", d+1)
             try(n / (d + 1), node, FADD, SHIFT_COST + ADD_COST, shift, &limit);
+          }
           d <<= 1;
           shift++;
         }
+      TRY_MSG("lower neighbor", n-1)
       try(n - 1, node, ADD1, ADD_COST, 0, &limit);
+      TRY_MSG("upper neighbor", n+1)
       try(n + 1, node, SUB1, SUB_COST, 0, &limit);
     }
 
