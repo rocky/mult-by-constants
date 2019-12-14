@@ -38,7 +38,9 @@ int main(int argc, char **argv)
   int values[] = {16, 51, 10};
   int expected_cost[] = {1, 4, 3};
   int expected_shift[] = {4, 0, 1};
-  int expected_binary_cost_to8[] = {1, 0, 1, 2, 1, 2, 3, 4, 1};
+  int expected_binary_cost_to16[] = {1,
+				     0, 1, 2, 1, 2, 3, 2, 1,
+				     2, 3, 4, 3, 4, 3, 2, 1};
 
   NODE *node = NULL;
   unsigned int initial_shift = 0;
@@ -68,6 +70,11 @@ int main(int argc, char **argv)
   // Test format_binary-value
   for (int i=0; i <= 16; i++) {
     char *str = format_binary_value(i);
+
+    // debug:
+    // printf("format_binary_value: got %s, expected %s\n",
+    //	     str, bin_strings[i]);
+
     if (strncmp(str, bin_strings[i], strlen(str)) != 0) {
       printf("format_binary_value: got %s, expected %s\n",
 	     str, bin_strings[i]);
@@ -77,9 +84,11 @@ int main(int argc, char **argv)
   }
 
   // Test binary cost method
-  for (int n = 0; n < ARRAY_SIZE(expected_binary_cost_to8); n++) {
+  for (int n = 0; n < ARRAY_SIZE(expected_binary_cost_to16); n++) {
+    // printf("Trying  %d\n", n);
     COST cost = binary_mult_cost((VALUE) n);
-    check_costs(n, "binary method", cost, expected_binary_cost_to8[n],
+    // printf("%d cost %g\n", n, cost);
+    check_costs(n, "binary method", cost, expected_binary_cost_to16[n],
   		0, 0);
   }
 

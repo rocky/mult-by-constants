@@ -277,31 +277,35 @@ COST binary_mult_cost(VALUE n)
   assert(n > (VALUE) 0);
 
   {
-    COST cost = (VALUE) 0;
-    VALUE p;
-    unsigned int final_shift = 0;
-    if (even(n)) {
-      /* FIXME: When we allow costs per shift amount, the return value of make_odd would
-         go into the shift cost, somehow. */
-      final_shift = make_odd(&n);
-      p = n;
-    }
+    COST cost = even(n) ? SHIFT_COST : (VALUE) 0;
+    VALUE p = n;
 
-    /*
-       n is odd now.  When there is no "subtract" op, drop off the
-       least-significant one bit and then and every other one bit is
-       an "add" to get that bit set followed by a "shift".  to
-       position the bit in place.
-    */
-    p = n >> 1;
-    while (p) {
-      if (odd(p)) {
-        cost += SHIFT_COST + ADD_COST;
+    while (p > 1) {
+
+      unsigned int shift_amount = make_odd(&p);
+
+      if (p == 1)
+        break;
+
+      /* Handle low-order 1's via "adds", and also "subtracts" if
+         subtracts are available.
+       */
+
+      {
+        VALUE old_p = p;
+        unsigned int one_count = make_even(&p);
+        /* FIXME: When we have more flexible costs,
+           change HAVE_SUBTRACT_OP to something more specific .
+        */
+        if (HAVE_SUBTRACT_OP && one_count > 1) {
+          cost += SHIFT_COST + SUB_COST;
+          p = old_p + 1;
+        } else {
+          cost += SHIFT_COST + ADD_COST;
+          p = old_p - 1;
+        }
       }
-      p >>= 1;
     }
-    if (final_shift)
-      cost += SHIFT_COST;
     return cost;
   }
 }

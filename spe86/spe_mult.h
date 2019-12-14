@@ -39,12 +39,15 @@ typedef unsigned long int VALUE;
 #define ADD_COST ((COST) 1)
 #endif
 
-/* Note:
-   If you want to disallow subtraction, set SUB_COST to INFINITE_COST
-*/
 #ifndef SUB_COST
 #define SUB_COST ((COST) 1)
 #endif
+
+/* Note:
+   If you want to disallow subtraction, set SUB_COST to INFINITE_COST
+*/
+
+#define HAVE_SUBTRACT_OP (SUB_COST != INFINITE_COST)
 
 #ifndef SHIFT_COST
 #define SHIFT_COST ((COST) 1)

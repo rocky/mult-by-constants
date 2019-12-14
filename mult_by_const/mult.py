@@ -303,20 +303,18 @@ class MultConst:
             # Handle low-order 1's via "adds", and also "subtracts" if subtracts are available.
             #
             one_run_count, m = consecutive_ones(n)
-            if one_run_count:
-                if "subtract" in self.op_costs and one_run_count > 2:
-                    subtract_cost = self.op_costs["subtract"]
-                    bin_instrs.append(Instruction("subtract", 1, subtract_cost))
-                    subtract_cost = self.shift_cost(one_run_count)
-                    cost += subtract_cost
-                    n += 1
-                    pass
-                else:
-                    add_cost = self.op_costs["add"]
-                    bin_instrs.append(Instruction("add", 1, add_cost))
-                    cost += add_cost
-                    n -= 1
-                    pass
+            if "subtract" in self.op_costs and one_run_count > 2:
+                subtract_cost = self.op_costs["subtract"]
+                bin_instrs.append(Instruction("subtract", 1, subtract_cost))
+                subtract_cost = self.shift_cost(one_run_count)
+                cost += subtract_cost
+                n += 1
+                pass
+            else:
+                add_cost = self.op_costs["add"]
+                bin_instrs.append(Instruction("add", 1, add_cost))
+                cost += add_cost
+                n -= 1
                 pass
             pass
 
