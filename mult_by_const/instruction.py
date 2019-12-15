@@ -81,7 +81,7 @@ def print_instructions(
         elif instr.op == "makezero":
             value = 0
         elif instr.op == "negate":
-            value = -i
+            value = -value
         else:
             print(f"unknown op {instr.op}")
         print(f"{value:9}: {instr}")
