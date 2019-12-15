@@ -61,30 +61,34 @@ def print_instructions(
         intro += f" for {n:2} = {bin2str(n)}"
     print(f"{intro}, cost: {cost:2}:")
     if n == 0:
-        i = 0
+        value = 0
         assert len(instrs) == 1
     else:
-        i = 1
-    j = 1
+        value = 1
+
+    if instrs:
+        print(f"{value:9}: r0 = <initial value>")
+
+    previous_value = 1
     for instr in instrs:
         if instr.op == "shift":
-            j = i
-            i <<= instr.amount
+            previous_value = value
+            value <<= instr.amount
         elif instr.op == "add":
-            i += 1 if instr.amount == 1 else j
+            value += 1 if instr.amount == 1 else previous_value
         elif instr.op == "subtract":
-            i -= 1 if instr.amount == 1 else j
+            value -= 1 if instr.amount == 1 else previous_value
         elif instr.op == "makezero":
-            i = 0
+            value = 0
         elif instr.op == "negate":
-            i = -i
+            value = -i
         else:
             print(f"unknown op {instr.op}")
-        print(f"{instr},\tvalue: {i:3}")
+        print(f"{value:9}: {instr}")
         pass
 
     print_sep()
-    assert n is None or n == i, f"Multiplier should be {n}, not computed value {i}"
+    assert n is None or n == value, f"Multiplier should be {n}, not computed value {value}"
     assert (
         expected_cost is None or expected_cost == cost
     ), f"Cost should be {expected_cost}, not computed value {cost}"

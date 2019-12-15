@@ -45,7 +45,7 @@ print_sequence(VALUE n, NODE *node, COST cost,
       if (verbosity > 0) {
         unsigned int i = emit_code(node);
         if (initial_shift > 0) {
-          printf("%9lu: u%u = u%u << %lu\n", n, i, i-1, initial_shift);
+          printf("%9lu: r%u = r%u << %lu\n", n, i, i-1, initial_shift);
         }
 
       }
@@ -346,28 +346,42 @@ COST spe_mult(VALUE n, NODE *node, unsigned int *initial_shift)
 extern
 unsigned int emit_code(NODE *node)
 {
-  unsigned int i;
+  /* Note currently we use register_number, since we need at most 2 registers in the
+     current chaining scheme.
+
+     However in the future, as we try to reduce sequences by using more arbitrary
+     partial products this can change. So we still keep this variable around
+     and return a register number.
+  */
+  unsigned int register_number;
+  char regnum[] = "r1";
 
   if (node == NULL)
     return 0;
 
-  i = emit_code(node->parent);
-  printf("%9lu: u%u = ", node->value, i);
+  register_number = emit_code(node->parent);
+
   if (node->opcode == NOOP)
     {
-      printf("1");
+      printf("%9lu: r0 = <initial value>", node->value);
     }
   else
     {
-      printf("u%u << %u %c ", i-1, node->shift, opsign[node->opcode]);
+      printf("%9lu: r1 = ", node->value);
+      if (node->shift) {
+        printf("r1 << %u", node->shift);
+      }
       if (node->opcode == ADD1 || node->opcode == SUB1)
-        printf("1");
-      else
-        printf("u%u", i-1);
+        printf(" %c r0", opsign[node->opcode]);
+      else if (node->opcode == FADD || node->opcode == FSUB)
+        printf(" %c r1", opsign[node->opcode]);
+      else {
+        printf("Uknown opcode\n");
+      }
     }
   printf("\n");
 
-  return i+1;
+  return ++register_number;
 }
 
 

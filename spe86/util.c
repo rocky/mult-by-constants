@@ -26,5 +26,5 @@ char *format_binary_value(VALUE n)
 extern void
 print_cost(VALUE n, COST cost) {
   char *str = format_binary_value(n);
-  printf("%" VALUEFMT " = %s, cost: %" COSTFMT "\n", n, str, cost);
+  printf("\n%" VALUEFMT " = %s, cost: %" COSTFMT "\n", n, str, cost);
 }
