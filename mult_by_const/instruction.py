@@ -3,7 +3,9 @@
 from typing import List
 from mult_by_const.util import bin2str, print_sep
 
-FACTOR_FLAG = -1
+FACTOR_FLAG = -1  # r1 = r1 op r0 where r0 was the register to mul
+REVERSE_SUBTRACT_1 = -2  # r1 = r0 - r1
+REVERSE_SUBTRACT_FACTOR = -3 # r1 = r2 - r1
 
 
 OP2SHORT = {
@@ -28,8 +30,13 @@ class Instruction:
         self.cost = cost
 
         # If "op" is a "shift", then it is amount to shift.
-        # if "op" is an "add or subtract", then it is either 1 if we
-        # add/subtract one, and FACTOR_FLAG if we add/subtract a factor value.
+
+        # if "op" is an "add or subtract", then it is either:
+        #    1 if we add/subtract one,
+        #    FACTOR_FLAG if we add/subtract a factor value,
+        #    REVERSE_SUBTRACT_1 if we reverse the operands and subtract,
+        #    REVERSE_SUBTRACT_FACTOR if we reverse the operands and add the last factor,
+        #
         self.amount = amount
 
     def __repr__(self):
@@ -108,10 +115,13 @@ def print_instructions(
 
     previous_value = 1
     last_target = "r0"
-    for instr in instrs:
+    target = "r1"
+    for i, instr in enumerate(instrs):
         if instr.op == "shift":
             previous_value = value
             value <<= instr.amount
+            if i < len(instrs) and instrs[i+1].amount != 1:
+                target = "r2"
         elif instr.op == "add":
             value += 1 if instr.amount == 1 else previous_value
         elif instr.op == "subtract":
@@ -122,8 +132,9 @@ def print_instructions(
             value = -value
         else:
             print(f"unknown op {instr.op}")
-        print(f"{value:9}: {instr.fmt(op1=last_target, r1='r0')}")
-        last_target = "r1"
+        print(f"{value:9}: {instr.fmt(target=target, op1=last_target, r1='r0')}")
+        last_target = target
+        target = "r1"
         pass
 
     print_sep()
