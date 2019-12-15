@@ -6,8 +6,14 @@ from mult_by_const.util import bin2str, print_sep
 FACTOR_FLAG = -1
 
 
-OP2SHORT = {"add": "+", "makezero": "0", "negate": "negate(n)", "shift": "<<", "subtract": "-"}
-SHORT2OP = {v:k for k, v in OP2SHORT.items()}
+OP2SHORT = {
+    "add": "+",
+    "makezero": "0",
+    "negate": "negate(n)",
+    "shift": "<<",
+    "subtract": "-",
+}
+SHORT2OP = {v: k for k, v in OP2SHORT.items()}
 
 
 class Instruction:
@@ -70,7 +76,7 @@ class Instruction:
         op_str += ";"
         return f"op: {op_str:22}cost: {self.cost:2}"
 
-    def __eq__(self, other):
+    def __eq__(self, other: object):
         for field in ("op", "cost", "amount"):
             if not hasattr(other, field):
                 return False
@@ -83,6 +89,8 @@ class Instruction:
 def print_instructions(
     instrs: List[Instruction], n=None, expected_cost=None, prefix=""
 ) -> None:
+    """Print the instruction-sequnce `instrs` in a nice, understandable way.
+    """
     print_sep("-")
     cost = instruction_sequence_cost(instrs)
     intro = f"{prefix}Instruction sequence"
@@ -119,7 +127,9 @@ def print_instructions(
         pass
 
     print_sep()
-    assert n is None or n == value, f"Multiplier should be {n}, not computed value {value}"
+    assert (
+        n is None or n == value
+    ), f"Multiplier should be {n}, not computed value {value}"
     assert (
         expected_cost is None or expected_cost == cost
     ), f"Cost should be {expected_cost}, not computed value {cost}"
@@ -127,20 +137,27 @@ def print_instructions(
 
 
 def check_instruction_sequence_value(n: int, instrs: List[Instruction]) -> None:
+    """
+    Check that the multiplication performed by the list of instructions `instrs`, is
+    equal to passed-in expected multiplier `n`.
+    """
     actual_value = instruction_sequence_value(instrs)
-    assert (
-        n == actual_value
-    ), f"{instrs} value for {n} is {actual_value}; expecting {n}"
+    assert n == actual_value, f"{instrs} value for {n} is {actual_value}; expecting {n}"
     return
 
 
 def check_instruction_sequence_cost(cost: float, instrs: List[Instruction]) -> None:
+    """Check that the instruction cost in `instrs`, is equal to passed-in expected cost `cost`.
+    """
     actual_cost = instruction_sequence_cost(instrs)
     assert cost == actual_cost, f"{instrs} cost is {actual_cost}; expecting {cost}"
     return
 
 
 def instruction_sequence_cost(instrs: List[Instruction]) -> float:
+    """Check that the instruction sequence cost of the list of instructions `instrs`, is
+    equal to passed-in expected cost `cost`.
+    """
     cost: float = 0
     for inst in instrs:
         cost += inst.cost
@@ -149,6 +166,8 @@ def instruction_sequence_cost(instrs: List[Instruction]) -> float:
 
 
 def instruction_sequence_value(instrs: List[Instruction]) -> int:
+    """Return the cost associated with instruction sequence `instrs`.
+    """
     i, j = 1, 1
     for instr in instrs:
         if instr.op == "shift":
@@ -174,6 +193,8 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
 
     return i
 
+
+# The next to functions assist in loading and dumping data.
 def str2instruction(s: str) -> Instruction:
     op_str = s[0:1]
     if op_str in ("+", "-"):
@@ -191,10 +212,12 @@ def str2instruction(s: str) -> Instruction:
             raise RuntimeError(f"Unconvertable string {s}")
     return Instruction(op, amount)
 
+
 def str2instructions(s: str) -> List[Instruction]:
     assert s[0:1] == "[" and s[-1:] == "]"
     instr_strs = s[1:-1].split(", ")
     return [str2instruction(inst_str) for inst_str in instr_strs]
+
 
 if __name__ == "__main__":
     instrs = [
