@@ -19,11 +19,11 @@ def test_instruction():
 
     # Round-trip test instructions via conversions
     expect_str = """\
-op: shift(4),   	cost:  1
-op: add(1),     	cost:  1
-op: shift(2),   	cost:  1
-op: subtract(n),	cost:  1
-op: negate(n),  	cost:  1
+op: shift(4);             cost:  1
+op: add(1);               cost:  1
+op: shift(2);             cost:  1
+op: subtract(n);          cost:  1
+op: negate(n);            cost:  1
     """
     expect = expect_str.split(
         "\n"
@@ -37,14 +37,12 @@ op: negate(n),  	cost:  1
         ), f"inst: {repr(inst)} vs. {repr(roundtrip_inst)}"
         pass
 
-    instrs_str = str(instrs)
-    instrs2 = str2instructions(instrs_str)
-    assert str(instrs2) == instrs_str
-    instrs2_str = "\n".join(str(inst) for inst in instrs2)
-    print(expect_str.strip())
-    print('-' * 10)
-    print(instrs2_str)
-    assert expect_str.strip() == instrs2_str
+    instrs2 = str2instructions("[<< 4, +1, << 2, -(n), negate(n)]")
+    if debug:
+        print(instrs)
+        print(instrs2)
+    assert instrs == instrs2
+
     assert str2instruction("0").cost == 1
 
 

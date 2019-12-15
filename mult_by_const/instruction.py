@@ -6,7 +6,7 @@ from mult_by_const.util import bin2str, print_sep
 FACTOR_FLAG = -1
 
 
-OP2SHORT = {"add": "+", "makezero": "0", "negate": "(-n)", "shift": "<<", "subtract": "-"}
+OP2SHORT = {"add": "+", "makezero": "0", "negate": "negate(n)", "shift": "<<", "subtract": "-"}
 SHORT2OP = {v:k for k, v in OP2SHORT.items()}
 
 
@@ -27,6 +27,7 @@ class Instruction:
         self.amount = amount
 
     def __repr__(self):
+        """Format instruction in compact form. No cost is shown"""
         op_str = OP2SHORT.get(self.op, self.op)
         if self.op == "shift":
             return f"{op_str} {self.amount}"
@@ -38,7 +39,25 @@ class Instruction:
         else:
             return f"{op_str} {self.amount}"
 
+    def fmt(self, target="r1", op1="r1", op2="r1", r1="r0"):
+        """format instruction as a full target and 2 operand assignment statement"""
+        instr_str = f"{target} = "
+        if self.op in ("add", "subtract"):
+            instr_str += f"{op1} {OP2SHORT[self.op]} "
+            instr_str += op2 if self.amount == FACTOR_FLAG else r1
+        elif self.op == "makezero":
+            instr_str += "0"
+        elif self.op == "negate":
+            instr_str += f"-{op1}"
+        elif self.op == "shift":
+            instr_str += f"{op1} << {self.amount}"
+        else:
+            instr_str = f"{op1} {self.op} {op2}"
+        instr_str += ";"
+        return f"{instr_str:22}cost: {self.cost:2}"
+
     def __str__(self):
+        """format instruction as an opcode and cost"""
         op_str = self.op
         if self.op in ("add", "subtract"):
             op_str += "(n)" if self.amount == FACTOR_FLAG else "(1)"
@@ -48,8 +67,18 @@ class Instruction:
             op_str = "negate(n)"
         else:
             op_str = f"{self.op}({self.amount})"
-        op_str += ","
-        return f"op: {op_str:12}\tcost: {self.cost:2}"
+        op_str += ";"
+        return f"op: {op_str:22}cost: {self.cost:2}"
+
+    def __eq__(self, other):
+        for field in ("op", "cost", "amount"):
+            if not hasattr(other, field):
+                return False
+            if getattr(self, field) != getattr(other, field):
+                return False
+            pass
+        return True
+
 
 def print_instructions(
     instrs: List[Instruction], n=None, expected_cost=None, prefix=""
@@ -67,9 +96,10 @@ def print_instructions(
         value = 1
 
     if instrs:
-        print(f"{value:9}: r0 = <initial value>")
+        print(f"{value:9}: r0 = <initial value>; cost:  0")
 
     previous_value = 1
+    last_target = "r0"
     for instr in instrs:
         if instr.op == "shift":
             previous_value = value
@@ -84,7 +114,8 @@ def print_instructions(
             value = -value
         else:
             print(f"unknown op {instr.op}")
-        print(f"{value:9}: {instr}")
+        print(f"{value:9}: {instr.fmt(op1=last_target, r1='r0')}")
+        last_target = "r1"
         pass
 
     print_sep()
@@ -148,7 +179,7 @@ def str2instruction(s: str) -> Instruction:
     if op_str in ("+", "-"):
         amount = 1 if s[1:2] == "1" else FACTOR_FLAG
         op = SHORT2OP[op_str]
-    elif s in ("(-n)", "0"):
+    elif s in ("negate(n)", "0"):
         amount = 0
         op = SHORT2OP[s]
     else:
@@ -174,6 +205,9 @@ if __name__ == "__main__":
         Instruction("negate", 0),
     ]
     print(instrs)
+    instrs2 = str2instructions("[<< 4, +1, << 2, -(n), negate(n)]")
+    print(instrs2)
+    assert instrs == instrs2
     for inst in instrs:
         print(str(inst))
     print_instructions(instrs)
@@ -183,6 +217,6 @@ if __name__ == "__main__":
 
     for inst in instrs:
         roundtrip_inst = str2instruction(repr(inst))
-        print(f"inst: {repr(inst)}, str: {repr(roundtrip_inst)}")
+        print(f"repr() vs roundtrip(): '{repr(inst)}' == '{repr(roundtrip_inst)}'")
         assert repr(inst) == repr(roundtrip_inst)
-        print(str2instructions("[<< 4, +1, << 2, -(n)]"))
+        pass
