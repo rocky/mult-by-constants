@@ -3,9 +3,11 @@
 from typing import List
 from mult_by_const.util import bin2str, print_sep
 
-FACTOR_FLAG = -2  # r1 = r1 op r0 where r0 was the register to mul
-REVERSE_SUBTRACT_1 = -1  # r1 = r0 - r1
-REVERSE_SUBTRACT_FACTOR = -3 # r1 = r2 - r1
+# Below r[1] is the register we started out with
+OP_R1 = 1  # r[n] = r[n] op r[1]
+FACTOR_FLAG = -2  # r[n] = r[n] op r[n-1]
+REVERSE_SUBTRACT_1 = -1  # r[n] = r[1] - r[n]
+REVERSE_SUBTRACT_FACTOR = -3 # r[n] = r[1] - r[n]
 
 
 OP2SHORT = {
@@ -74,22 +76,39 @@ class Instruction:
         else:
             return f"{op_str} {self.amount}"
 
-    def fmt(self, target="r1", op1="r1", op2="r1", r1="r0"):
-        """format instruction as a full target and 2 operand assignment statement"""
+    def fmt(self, target="r[n]", op1="r[n]", op2="r[n-1]", r1="r[1]"):
+        """format instruction as an assignment statement with up to two arguments"""
         instr_str = f"{target} = "
-        if self.op in ("add", "subtract"):
-            instr_str += f"{op1} {OP2SHORT[self.op]} "
-            instr_str += op2 if self.amount == FACTOR_FLAG else r1
-        elif self.op == "zero":
-            instr_str += "0"
+        if self.op == "add":
+            if self.amount == OP_R1:
+                instr_str += f"{op1} + {r1}"
+            elif self.amount == FACTOR_FLAG:
+                instr_str += f"{op1} + {op2}"
+            else:
+                instr_str += f" ???{self.amount}"
+        elif self.op == "subtract":
+            if self.amount == OP_R1:
+                instr_str += f"{op1} - {r1}"
+            elif self.amount == FACTOR_FLAG:
+                instr_str += f"{op1} - {op2}"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                instr_str += f"{r1} - {op1}"
+            elif self.amount == REVERSE_SUBTRACT_FACTOR:
+                instr_str += f"{op2} - {op1}"
+            else:
+                instr_str += f" ???{self.amount}"
         elif self.op == "negate":
             instr_str += f"-{op1}"
+        elif self.op == "nop":
+            instr_str += f"{target}"
         elif self.op == "shift":
             instr_str += f"{op1} << {self.amount}"
+        elif self.op == "zero":
+            instr_str += "0"
         else:
             instr_str = f"{op1} {self.op} {op2}"
         instr_str += ";"
-        return f"{instr_str:22}cost: {self.cost:2}"
+        return f"{instr_str:24}cost: {self.cost:2}"
 
     def __str__(self):
         """format instruction showing cost"""
@@ -121,7 +140,7 @@ class Instruction:
         else:
             op_str = f"{self.op} {self.amount} ???"
         op_str += ";"
-        return f"op: {op_str:22}cost: {self.cost:2}"
+        return f"op: {op_str:24}cost: {self.cost:2}"
 
     def __eq__(self, other: object):
         for field in ("op", "cost", "amount"):
@@ -151,30 +170,46 @@ def print_instructions(
         value = 1
 
     if instrs:
-        print(f"{value:9}: r0 = <initial value>; cost:  0")
+        print(f"{value:9}: r[1] = <initial value>; cost:  0")
 
     previous_value = 1
-    last_target = "r0"
-    target = "r1"
+    last_target = "r[1]"
+    target = "r[n]"
     for i, instr in enumerate(instrs):
         if instr.op == "shift":
             previous_value = value
             value <<= instr.amount
             if i < len(instrs) and instrs[i+1].amount != 1:
-                target = "r2"
+                target = "r[n]"
         elif instr.op == "add":
-            value += 1 if instr.amount == 1 else previous_value
+            if instr.amount == OP_R1:
+                value += 1
+            elif instr.amount == FACTOR_FLAG:
+                value += previous_value
+            else:
+                print(f"unknown add flag: {instr.amount}")
         elif instr.op == "subtract":
-            value -= 1 if instr.amount == 1 else previous_value
+            if instr.amount == OP_R1:
+                value -= 1
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                value = 1 - value
+            elif instr.amount == FACTOR_FLAG:
+                value -= previous_value
+            elif instr.amount == REVERSE_SUBTRACT_FACTOR:
+                value = previous_value - value
+            else:
+                print(f"unknown subtract flag: {instr.amount}")
         elif instr.op == "zero":
             value = 0
         elif instr.op == "negate":
             value = -value
+        elif instr.op == "nop":
+            pass
         else:
             print(f"unknown op {instr.op}")
-        print(f"{value:9}: {instr.fmt(target=target, op1=last_target, r1='r0')}")
+        print(f"{value:9}: {instr.fmt(target=target, op1=last_target, r1='r[1]')}")
         last_target = target
-        target = "r1"
+        target = "r[n]"
         pass
 
     print_sep()

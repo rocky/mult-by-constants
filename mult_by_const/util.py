@@ -28,9 +28,9 @@ def default_shift_cost(num: int) -> int:
     return 1
 
 
-def bin2str(n: int):
+def bin2str(n: int) -> str:
     """Like built-in bin(), but we remove the leading 0b"""
-    return bin(n)[2:]
+    return f"-{bin(-n)[2:]}" if n < 0 else bin(n)[2:]
 
 
 # Length of separator lines.

@@ -8,6 +8,7 @@ from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
 
 from mult_by_const.instruction import (
     FACTOR_FLAG,
+    OP_R1,
     REVERSE_SUBTRACT_1,
     Instruction,
     instruction_sequence_cost,
@@ -206,7 +207,7 @@ class MultConst:
                     self.debug_msg(f"Neighbor {n_inc} update {try_cost} < {upper}.")
 
                 n_instrs = deepcopy(neighbor_instrs)
-                n_instrs.append(Instruction(op_str, 1, op_cost))
+                n_instrs.append(Instruction(op_str, OP_R1, op_cost))
                 n_cost = instruction_sequence_cost(n_instrs)
                 self.mult_cache.insert_or_update(n, n_cost, n_cost, True, n_instrs)
 
@@ -324,13 +325,12 @@ class MultConst:
             one_run_count, m = consecutive_ones(n)
             if self.cpu_model.can_subtract() and one_run_count > 2:
                 subtract_cost = self.op_costs["subtract"]
-                # FIXME: see what's up for -3
                 if need_negation and self.cpu_model.subtract_can_negate():
                     bin_instrs.append(Instruction("subtract", REVERSE_SUBTRACT_1,
                                                   subtract_cost))
                     need_negation = False
                 else:
-                    bin_instrs.append(Instruction("subtract", 1, subtract_cost))
+                    bin_instrs.append(Instruction("subtract", OP_R1, subtract_cost))
 
                 subtract_cost = self.shift_cost(one_run_count)
                 cost += subtract_cost
@@ -338,7 +338,7 @@ class MultConst:
                 pass
             else:
                 add_cost = self.op_costs["add"]
-                bin_instrs.append(Instruction("add", 1, add_cost))
+                bin_instrs.append(Instruction("add", OP_R1, add_cost))
                 cost += add_cost
                 n -= 1
                 pass
@@ -348,7 +348,7 @@ class MultConst:
 
         if need_negation:
             negate_cost = self.op_costs["negate"]
-            bin_instrs.append(Instruction("negate", 1, negate_cost))
+            bin_instrs.append(Instruction("negate", OP_R1, negate_cost))
             cost += negate_cost
 
         if self.debug:
@@ -567,8 +567,7 @@ if __name__ == "__main__":
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    # FIXME: see what's up for -3
-    for n in [1, 0, -1, -3]:
+    for n in [1, 0, -1, -7]:
         cost, instrs = mconst.binary_sequence(n)
         print_instructions(instrs, n, cost)
 
