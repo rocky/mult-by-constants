@@ -15,14 +15,14 @@ INSTRUCTION_TYPES: FrozenSet[str] = frozenset(("two-address", "three-address"))
 # Instruction costs. Note that:
 # "shift" of one place can be simulated via a doubling add: r1 << 1 == r1 + r1
 # "negate" can be simulated via "subtract" r1 - (r1 << 1)
-# "makezero" can be simulated via "subtract" and a number of other operations:
+# "zero" can be simulated via "subtract" and a number of other operations:
 #     r1 - r1
 # "nop" is kind of a placeholder for the initial register being an initial value, and that is
 # why it is (and must be) 0.
 #
 RISC_equal_time_cost_profile: Dict[str, int] = {
     "add": 1,
-    "makezero": 1,
+    "zero": 1,
     "copy": 1,
     "negate": 1,
     "nop": 0,
@@ -34,7 +34,7 @@ RISC_equal_time_cost_profile: Dict[str, int] = {
 # "add" and "copy" only
 add_only_cost_profile: Dict[str, int] = {
     "add": 1,
-    "makezero": inf_cost,  # Can't do in this model
+    "zero": inf_cost,  # Can't do in this model
     "copy": 1,
     "nop": 0,
 }
@@ -42,7 +42,7 @@ add_only_cost_profile: Dict[str, int] = {
 # "add", "subtraction", "copy" only.
 add_subtract_cost_profile: Dict[str, int] = {
     "add": 1,
-    "makezero": 1,  # via subtract
+    "zero": 1,  # via subtract
     "subtract": 1,
     "copy": 1,
     "nop": 0,
@@ -75,7 +75,7 @@ class CPUProfile:
         self.instruction_type = instruction_type
         self.max_registers = max_registers
         self.costs = costs
-        for field in ("add", "makezero", "copy", "nop"):
+        for field in ("add", "zero", "copy", "nop"):
             assert field in costs, f'A cost model needs to include  operation "{field}"'
 
     def subtract_can_negate(self) -> bool:
@@ -84,8 +84,11 @@ class CPUProfile:
     def can_negate(self) -> bool:
         return "negate" in self.costs or self.subtract_can_negate()
 
+    def can_subtract(self) -> bool:
+        return "subtract" in self.costs
+
     def can_zero(self) -> bool:
-        return self.can_negate() or self.costs["makezero"] != inf_cost
+        return self.can_negate() or self.costs["zero"] != inf_cost
 
     def toDict(self) -> Dict[str, Any]:
         return {

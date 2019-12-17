@@ -3,15 +3,15 @@
 from typing import List
 from mult_by_const.util import bin2str, print_sep
 
-FACTOR_FLAG = -1  # r1 = r1 op r0 where r0 was the register to mul
-REVERSE_SUBTRACT_1 = -2  # r1 = r0 - r1
+FACTOR_FLAG = -2  # r1 = r1 op r0 where r0 was the register to mul
+REVERSE_SUBTRACT_1 = -1  # r1 = r0 - r1
 REVERSE_SUBTRACT_FACTOR = -3 # r1 = r2 - r1
 
 
 OP2SHORT = {
     "add": "+",
-    "makezero": "0",
-    "negate": "negate(n)",
+    "zero": "0",
+    "negate": "-n",
     "nop": "nop",
     "shift": "<<",
     "subtract": "-",
@@ -43,13 +43,34 @@ class Instruction:
     def __repr__(self):
         """Format instruction in compact form. No cost is shown"""
         op_str = OP2SHORT.get(self.op, self.op)
-        if self.op == "shift":
-            return f"{op_str} {self.amount}"
-        elif self.op in ("makezero", "negate"):
+        if op_str == "<<":
+            return f"n{op_str}{self.amount}"
+        elif op_str in ("0", "nop", "-n"):
             return op_str
-        elif self.op in ("add", "subtract"):
-            operand = "n" if self.amount == FACTOR_FLAG else "1"
-            return f"{op_str}{operand}"
+        elif op_str == "+":
+            operand1 = "n"
+            if self.amount == FACTOR_FLAG:
+                operand2 = "m"
+            elif self.amount == 1:
+                operand2 = "1"
+                pass
+            else:
+                operand2 = f"???{self.amount}"
+            return f"{operand1}{op_str}{operand2}"
+        elif op_str == "-":
+            if self.amount == FACTOR_FLAG:
+                operand1 = "n"
+                operand2 = "m"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                operand1 = "1"
+                operand2 = "n"
+            elif self.amount == 1:
+                operand1 = "n"
+                operand2 = "1"
+            else:
+                operand1 = "n"
+                operand2 = f"???{self.amount}"
+            return f"{operand1}{op_str}{operand2}"
         else:
             return f"{op_str} {self.amount}"
 
@@ -59,8 +80,8 @@ class Instruction:
         if self.op in ("add", "subtract"):
             instr_str += f"{op1} {OP2SHORT[self.op]} "
             instr_str += op2 if self.amount == FACTOR_FLAG else r1
-        elif self.op == "makezero":
-            pass
+        elif self.op == "zero":
+            instr_str += "0"
         elif self.op == "negate":
             instr_str += f"-{op1}"
         elif self.op == "shift":
@@ -71,16 +92,34 @@ class Instruction:
         return f"{instr_str:22}cost: {self.cost:2}"
 
     def __str__(self):
-        """format instruction as an opcode and cost"""
+        """format instruction showing cost"""
         op_str = self.op
-        if self.op in ("add", "subtract"):
-            op_str += "(n)" if self.amount == FACTOR_FLAG else "(1)"
-        elif self.op == "makezero":
-            op_str = "0"
+        if self.op == "add":
+            if self.amount == FACTOR_FLAG:
+                op_str += " n, m"
+            elif self.amount == 1:
+                op_str += " n, 1"
+            else:
+                op_str += f" ???{self.amount}"
+                pass
+        elif self.op == "subtract":
+            if self.amount == FACTOR_FLAG:
+                op_str += " n, m"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                op_str += " 1, n"
+            elif self.amount == 1:
+                op_str += " n, 1"
+            else:
+                op_str += f"???{self.amount}"
+        elif self.op in ("zero", "noop"):
+            pass
         elif self.op == "negate":
-            op_str = "negate(n)"
+            op_str += " n"
+            pass
+        elif self.op == "shift":
+            op_str += f" n, {self.amount}"
         else:
-            op_str = f"{self.op}({self.amount})"
+            op_str = f"{self.op} {self.amount} ???"
         op_str += ";"
         return f"op: {op_str:22}cost: {self.cost:2}"
 
@@ -127,7 +166,7 @@ def print_instructions(
             value += 1 if instr.amount == 1 else previous_value
         elif instr.op == "subtract":
             value -= 1 if instr.amount == 1 else previous_value
-        elif instr.op == "makezero":
+        elif instr.op == "zero":
             value = 0
         elif instr.op == "negate":
             value = -value
@@ -195,7 +234,7 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
                 i -= 1
             else:
                 i -= j
-        elif instr.op == "makezero":
+        elif instr.op == "zero":
             return 0
         elif instr.op == "negate":
             i = -i
@@ -210,26 +249,32 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
 
 # The next to functions assist in loading and dumping data.
 def str2instruction(s: str) -> Instruction:
-    op_str = s[0:1]
-    if op_str in ("+", "-"):
-        amount = 1 if s[1:2] == "1" else FACTOR_FLAG
-        op = SHORT2OP[op_str]
-    elif s in ("negate(n)", "0"):
-        amount = 0
-        op = SHORT2OP[s]
-    elif s == "makezero":
-        amount = 0
-        op = SHORT2OP[s]
-    elif s == "nop":
-        amount = 0
-        op = SHORT2OP[s]
-    else:
-        op_str = s[0:2]
-        if op_str == "<<":
-            amount = int(s[2:], 10)
-            op = SHORT2OP[op_str]
+    if len(s) < 2:
+        raise RuntimeError(f'Unconvertable string "{s}" is too short')
+    if s[1] in ("+", "-"):
+        if s[2] == "m":
+            amount = FACTOR_FLAG
+        elif s[2] == "1":
+            amount = 1
+        elif s[2] == "n":
+            if s[1] == "-":
+                amount = REVERSE_SUBTRACT_1
+            else:
+                raise RuntimeError(f"Unconvertable amount in subtract {s}")
         else:
-            raise RuntimeError(f"Unconvertable string {s}")
+            raise RuntimeError(f"Unconvertable amount in add/subtract {s}")
+        pass
+        op = SHORT2OP[s[1]]
+    elif s in ("-n", "0", "nop"):
+        amount = 0
+        op = SHORT2OP[s]
+    elif s[1] == "<":
+        if s[1:3] != "<<":
+            raise RuntimeError(f"Expecting shift operator got {s}")
+        amount = int(s[3:], 10)
+        op = SHORT2OP["<<"]
+    else:
+        raise RuntimeError(f"Unconvertable string {s}")
     return Instruction(op, amount)
 
 
@@ -248,7 +293,7 @@ if __name__ == "__main__":
         Instruction("negate", 0),
     ]
     print(instrs)
-    instrs2 = str2instructions("[<< 4, +1, << 2, -(n), negate(n)]")
+    instrs2 = str2instructions("[n<<4, n+1, n<<2, n-m, -n]")
     print(instrs2)
     assert instrs == instrs2
     for inst in instrs:

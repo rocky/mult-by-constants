@@ -75,7 +75,7 @@ class MultCache:
                 1,
                 1,
                 True,
-                [Instruction("makezero", 0, self.cpu_profile.costs["makezero"])],
+                [Instruction("zero", 0, self.cpu_profile.costs["zero"])],
             ),
             1: (0, 0, True, [Instruction("nop", 0, self.cpu_profile.costs["nop"])]),
         }
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # Note: dictionaries keys in Python 3.8+ are in given in insertion order.
     assert list(multcache.keys()) == [0, 1], "We should have at least 0 and 1"
     multcache.check()
-    multcache.insert(0, 1, 1, True, [Instruction("makezero", 0, 1)])
+    multcache.insert(0, 1, 1, True, [Instruction("zero", 0, 1)])
     multcache.check()
     multcache.insert_or_update(1, 0, 0, True, [Instruction("nop", 0, 0)])
     multcache.check()

@@ -8,6 +8,7 @@ from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
 
 from mult_by_const.instruction import (
     FACTOR_FLAG,
+    REVERSE_SUBTRACT_1,
     Instruction,
     instruction_sequence_cost,
     instruction_sequence_value,
@@ -25,7 +26,11 @@ from mult_by_const.cache import MultCache
 
 class MultConst:
     def __init__(
-            self, cpu_model=DEFAULT_CPU_PROFILE, debug=False, shift_cost_fn=default_shift_cost, search_methods=None
+        self,
+        cpu_model=DEFAULT_CPU_PROFILE,
+        debug=False,
+        shift_cost_fn=default_shift_cost,
+        search_methods=None,
     ):
 
         # Op_costs gives costs of using each kind of instruction.
@@ -59,7 +64,7 @@ class MultConst:
             self.search_methods = (
                 self.search_short_factors,
                 self.search_subtract_one,
-                self.search_add_one
+                self.search_add_one,
             )
             pass
         else:
@@ -261,8 +266,6 @@ class MultConst:
 
         """
 
-        # FIXME allow negative numbers too.
-        assert n >= 0, "We handle only positive numbers"
         cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
         if finished:
             return (cache_upper, cache_instr)
@@ -272,15 +275,21 @@ class MultConst:
     def binary_sequence_inner(self, n: int) -> Tuple[float, List[Instruction]]:
 
         if n == 0:
-            return self.op_costs["makezero"], [Instruction("makezero", 0,
-                                                           self.op_costs["makezero"])]
+            return (
+                self.op_costs["zero"],
+                [Instruction("zero", 0, self.op_costs["zero"])],
+            )
         orig_n = n
 
         if n < 0:
-            is_negative = True
+            if not self.cpu_model.can_negate():
+                raise TypeError(
+                    f"cpu model {self.cpu_model.name} doesn't support multiplication by negative numbers"
+                )
+            need_negation = True
             n = -n
         else:
-            is_negative = False
+            need_negation = False
 
         assert n > 0
 
@@ -288,6 +297,15 @@ class MultConst:
         cost: float = 0  # total cost of sequence
 
         while n > 1:
+
+            if need_negation:
+                cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[-n]
+                if cache_upper < inf_cost:
+                    cost += cache_upper
+                    cache_instrs.reverse()  # Because we compute in reverse order here
+                    bin_instrs += cache_instrs
+                    need_negation = False
+                    break
 
             cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
             if cache_upper < inf_cost:
@@ -304,9 +322,16 @@ class MultConst:
             # Handle low-order 1's via "adds", and also "subtracts" if subtracts are available.
             #
             one_run_count, m = consecutive_ones(n)
-            if "subtract" in self.op_costs and one_run_count > 2:
+            if self.cpu_model.can_subtract() and one_run_count > 2:
                 subtract_cost = self.op_costs["subtract"]
-                bin_instrs.append(Instruction("subtract", 1, subtract_cost))
+                # FIXME: see what's up for -3
+                if need_negation and self.cpu_model.subtract_can_negate():
+                    bin_instrs.append(Instruction("subtract", REVERSE_SUBTRACT_1,
+                                                  subtract_cost))
+                    need_negation = False
+                else:
+                    bin_instrs.append(Instruction("subtract", 1, subtract_cost))
+
                 subtract_cost = self.shift_cost(one_run_count)
                 cost += subtract_cost
                 n += 1
@@ -321,7 +346,7 @@ class MultConst:
 
         bin_instrs.reverse()
 
-        if is_negative:
+        if need_negation:
             negate_cost = self.op_costs["negate"]
             bin_instrs.append(Instruction("negate", 1, negate_cost))
             cost += negate_cost
@@ -392,7 +417,9 @@ class MultConst:
     ) -> Tuple[float, List[Instruction]]:
         return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs)
 
-    def check_for_cutoff(self, n: int, upper: float, candidate_instrs: List[Instruction]) -> None:
+    def check_for_cutoff(
+        self, n: int, upper: float, candidate_instrs: List[Instruction]
+    ) -> None:
 
         candidate_cost = instruction_sequence_cost(candidate_instrs)
         if candidate_cost >= upper:
@@ -517,9 +544,7 @@ class MultConst:
         candidate_instrs = cache_instrs
 
         for fn in self.search_methods:
-            upper, candidate_instrs = fn(
-                m, upper, lower, instrs, candidate_instrs
-            )
+            upper, candidate_instrs = fn(m, upper, lower, instrs, candidate_instrs)
 
         self.check_for_cutoff(n, upper, candidate_instrs)
 
@@ -531,6 +556,7 @@ class MultConst:
 
 if __name__ == "__main__":
     from mult_by_const.instruction import print_instructions
+
     # from mult_by_const.io import dump
 
     mconst = MultConst(debug=True)
@@ -541,7 +567,8 @@ if __name__ == "__main__":
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    for n in [1, 0]:
+    # FIXME: see what's up for -3
+    for n in [1, 0, -1, -3]:
         cost, instrs = mconst.binary_sequence(n)
         print_instructions(instrs, n, cost)
 
