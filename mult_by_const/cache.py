@@ -92,6 +92,7 @@ class MultCache:
         finished: bool,
         instrs: List[Instruction],
     ) -> None:
+        # print("XXX", (lower, upper, finished, instrs))
         self.cache[n] = (lower, upper, finished, instrs)
 
     def insert_or_update(

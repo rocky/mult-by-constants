@@ -90,7 +90,7 @@ class CPUProfile:
     def can_zero(self) -> bool:
         return self.can_negate() or self.costs["zero"] != inf_cost
 
-    def toDict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
             "instruction_type": self.instruction_type,
@@ -120,4 +120,4 @@ if __name__ == "__main__":
     print(POWER_3addr_3reg.subtract_can_negate())
     print(chained_adds.can_negate())
     print(chained_adds.subtract_can_negate())
-    print(chained_adds.toDict())
+    print(chained_adds.to_dict())

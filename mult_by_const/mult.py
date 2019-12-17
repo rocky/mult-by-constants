@@ -4,28 +4,23 @@
 from typing import List, Tuple
 from copy import deepcopy
 
+from mult_by_const.multclass import MultConstClass
 from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
+from mult_by_const.binary_method import binary_sequence, binary_sequence_inner
 
 from mult_by_const.instruction import (
     FACTOR_FLAG,
     OP_R1,
-    REVERSE_SUBTRACT_1,
+    # REVERSE_SUBTRACT_1, # Will be adding soon
     Instruction,
     instruction_sequence_cost,
     instruction_sequence_value,
 )
 
-from mult_by_const.util import (
-    bin2str,
-    consecutive_zeros,
-    consecutive_ones,
-    default_shift_cost,
-)
-
-from mult_by_const.cache import MultCache
+from mult_by_const.util import default_shift_cost
 
 
-class MultConst:
+class MultConst(MultConstClass):
     def __init__(
         self,
         cpu_model=DEFAULT_CPU_PROFILE,
@@ -33,34 +28,7 @@ class MultConst:
         shift_cost_fn=default_shift_cost,
         search_methods=None,
     ):
-
-        # Op_costs gives costs of using each kind of instruction.
-        self.cpu_model = cpu_model
-        self.op_costs = cpu_model.costs
-        self.shift_cost = shift_cost_fn
-
-        # Cache prior searches
-        # The key is the positive number looked up.
-        # The value is a tuple of: lower bound, upper bound,
-        # "finished" boolean, and an upper-bound instruction sequence.
-        #
-        # If the "finished" boolean is True, then the searching
-        # previously completed, and "upper" has the final
-        # cost. Otherwise, upper is undefined; a cutoff occurred previously
-        # and searching wasn't complete. However, on subsquent
-        # searches, we can query the lower bound and do another cutoff
-        # if the current-search lower bound is not less than the
-        # previously-recorded lower bound.
-
-        # FIXME: give an examples here. Also attach names "alpha" and
-        # and "beta" with the different types of cutoffs.
-        self.mult_cache = MultCache(cpu_model)
-
-        if debug:
-            # We use indent show nesting in debug output
-            self.indent = 0
-        self.debug = debug
-
+        super().__init__(cpu_model, debug, shift_cost_fn, search_methods)
         if search_methods is None:
             self.search_methods = (
                 self.search_short_factors,
@@ -68,34 +36,6 @@ class MultConst:
                 self.search_add_one,
             )
             pass
-        else:
-            self.search_methods = search_methods
-        return
-
-    def dedent(self) -> None:
-        if self.debug:
-            self.indent -= 2
-
-    def debug_msg(self, s: str, relative_indent=0) -> None:
-        print(f"{' '*self.indent}{s}")
-        if relative_indent:
-            self.indent += relative_indent
-
-    def make_odd(
-        self, n: int, cost: float, result: List[Instruction]
-    ) -> Tuple[int, float]:
-        """Handle low-order 0's with a single shift.
-           Note: those machines that can only do a single shift of one place
-           or those machines whose time varies with the shift amount, that is covered
-           by the self.shift_cost function
-        """
-        shift_amount, n = consecutive_zeros(n)
-        if shift_amount:
-            shift_cost = self.shift_cost(shift_amount)
-            cost += shift_cost
-            result.append(Instruction("shift", shift_amount, shift_cost))
-            pass
-        return (n, cost)
 
     def try_shift_op_factor(
         self,
@@ -221,145 +161,6 @@ class MultConst:
 
         return upper, candidate_instrs
 
-    def binary_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
-        """Returns the cost and operation sequence using the binary
-        representation of the number, assuming a (mostly empty)
-        multiplication cache. (0 and 1 are always in the cache)
-
-        If the cache has been populated, it is possible this will pick
-        up a more optimal value from the cache and further reduce the
-        sequence cost.
-
-        In this (noncached) approach, each one bit other than the
-        highest-order one bit is a "shift" by the number of
-        consecutive zeros followed by an addition.
-
-        If the number is even and not zero, then there is a final "shift".
-
-        If subtraction is available, then each run of 1's in the
-        binary representation is replaced by a shift of that amount
-        followed by a subtraction.
-
-        Since we generally prefer addition over subtraction:
-
-             x = (x << 1) + x
-
-        is preferable to:
-
-             x = (x << 2) - x
-
-        Examples:
-        ---------
-
-        We'll assume cost one for "add", "subtract", and "shift" by
-        any amount.
-
-        number  cost  remarks
-        ------  ----  ------
-        0:      0     do nothing; load constant zero
-        1:      0     do nothing, load operand
-        10:     1     shift one
-        11:     2     shift one; add
-        101:    2     shift two; add
-        110     3     shift one; add; shift one
-        111:    2     shift three; subtract one      - if subtract is available
-        111:    4     shift one; add; shift one; add - if subtract is not available
-
-        """
-
-        cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
-        if finished:
-            return (cache_upper, cache_instr)
-
-        return self.binary_sequence_inner(n)
-
-    def binary_sequence_inner(self, n: int) -> Tuple[float, List[Instruction]]:
-
-        if n == 0:
-            return (
-                self.op_costs["zero"],
-                [Instruction("zero", 0, self.op_costs["zero"])],
-            )
-        orig_n = n
-
-        if n < 0:
-            if not self.cpu_model.can_negate():
-                raise TypeError(
-                    f"cpu model {self.cpu_model.name} doesn't support multiplication by negative numbers"
-                )
-            need_negation = True
-            n = -n
-        else:
-            need_negation = False
-
-        assert n > 0
-
-        bin_instrs: List[Instruction] = []
-        cost: float = 0  # total cost of sequence
-
-        while n > 1:
-
-            if need_negation:
-                cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[-n]
-                if cache_upper < inf_cost:
-                    cost += cache_upper
-                    cache_instrs.reverse()  # Because we compute in reverse order here
-                    bin_instrs += cache_instrs
-                    need_negation = False
-                    break
-
-            cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
-            if cache_upper < inf_cost:
-                cost += cache_upper
-                cache_instrs.reverse()  # Because we compute in reverse order here
-                bin_instrs += cache_instrs
-                break
-
-            n, cost = self.make_odd(n, cost, bin_instrs)
-
-            if n == 1:
-                break
-
-            # Handle low-order 1's via "adds", and also "subtracts" if subtracts are available.
-            #
-            one_run_count, m = consecutive_ones(n)
-            if self.cpu_model.can_subtract() and one_run_count > 2:
-                subtract_cost = self.op_costs["subtract"]
-                if need_negation and self.cpu_model.subtract_can_negate():
-                    bin_instrs.append(Instruction("subtract", REVERSE_SUBTRACT_1,
-                                                  subtract_cost))
-                    need_negation = False
-                else:
-                    bin_instrs.append(Instruction("subtract", OP_R1, subtract_cost))
-
-                subtract_cost = self.shift_cost(one_run_count)
-                cost += subtract_cost
-                n += 1
-                pass
-            else:
-                add_cost = self.op_costs["add"]
-                bin_instrs.append(Instruction("add", OP_R1, add_cost))
-                cost += add_cost
-                n -= 1
-                pass
-            pass
-
-        bin_instrs.reverse()
-
-        if need_negation:
-            negate_cost = self.op_costs["negate"]
-            bin_instrs.append(Instruction("negate", OP_R1, negate_cost))
-            cost += negate_cost
-
-        if self.debug:
-            self.debug_msg(
-                f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}"
-            )
-
-        self.mult_cache.insert_or_update(orig_n, 0, cost, False, bin_instrs)
-
-        return (cost, bin_instrs)
-
     def find_mult_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
         """Top-level searching routine. Computes binary method upper bound
         and then does setup to the alpha-beta search
@@ -371,7 +172,7 @@ class MultConst:
 
         if cache_upper == inf_cost:
             # The binary sequence gives a workable upper bound on the cost
-            cache_upper, bin_instrs = self.binary_sequence(n)
+            cache_upper, bin_instrs = binary_sequence(self, n)
             self.mult_cache.insert_or_update(n, 0, cache_upper, False, bin_instrs)
 
         cost, instrs = self.alpha_beta_search(n, cache_upper)
@@ -526,7 +327,7 @@ class MultConst:
         # If no (incomplete) cached value found, use
         # the binary sequence which gives a workable upper bound on the cost.
         if cache_upper == inf_cost:
-            bin_cost, bin_instrs = self.binary_sequence_inner(m)
+            bin_cost, bin_instrs = binary_sequence_inner(self, m)
 
             # Cache the binary sequence portion result
             self.mult_cache.insert(m, 0, bin_cost, False, bin_instrs)
@@ -560,27 +361,22 @@ if __name__ == "__main__":
     # from mult_by_const.io import dump
 
     mconst = MultConst(debug=True)
-    # cost, instrs = mconst.binary_sequence(340)
     # cost, instrs = mconst.try_shift_op_factor(n, 5, "add", 2, min_cost, 0, [], bin_instrs)
     # assert min_cost == cost, "5 is not a factor of 27, so we keep old min_cost"
     # cost, instrs = mconst.try_shift_op_factor(n, 3, "add", 1, min_cost, 0, [], bin_instrs)
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    for n in [1, 0, -1, -7]:
-        cost, instrs = mconst.binary_sequence(n)
-        print_instructions(instrs, n, cost)
-
     # for n in [170, 1706] + list(range(340, 345)):
-    #     min_cost, instrs = m.binary_sequence(n)
-    #     cost, instrs = m.find_mult_sequence(n)
+    #     min_cost, instrs = binary_sequence(mconst, n)
+    #     cost, instrs = mconst.find_mult_sequence(n)
     #     print_instructions(instrs, n, cost)
-    #     dump(m.mult_cache)
-    #     m.mult_cache.check()
-    #     # m.mult_cache.clear()
+    #     dump(mconst.mult_cache)
+    #     mconst.mult_cache.check()
+    #     # mconst.mult_cache.clear()
 
-    # n = 78
+    n = 78
 
-    # mconst = MultConst(debug=True)
-    # cost, instrs = mconst.find_mult_sequence(n)
-    # print_instructions(instrs, n, cost)
+    mconst = MultConst(debug=True)
+    cost, instrs = mconst.find_mult_sequence(n)
+    print_instructions(instrs, n, cost)

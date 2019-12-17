@@ -179,8 +179,9 @@ def print_instructions(
         if instr.op == "shift":
             previous_value = value
             value <<= instr.amount
-            if i < len(instrs) and instrs[i+1].amount != 1:
+            if i + 1 < len(instrs) and instrs[i + 1].amount != OP_R1:
                 target = "r[n]"
+                pass
         elif instr.op == "add":
             if instr.amount == OP_R1:
                 value += 1
