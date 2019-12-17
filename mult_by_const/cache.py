@@ -1,10 +1,9 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """A multiplication-sequence cache module"""
 from copy import deepcopy
-from sys import maxsize as inf_cost
 from typing import List, Tuple, Dict, Any
 
-from mult_by_const.costs import OP_COSTS_DEFAULT
+from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
 
 from mult_by_const.instruction import (
     check_instruction_sequence_cost,
@@ -19,9 +18,9 @@ from mult_by_const.version import VERSION
 class MultCache:
     """A multiplication-sequence cache object"""
 
-    def __init__(self, op_costs=OP_COSTS_DEFAULT, *args, **kwargs):
+    def __init__(self, cpu_profile=DEFAULT_CPU_PROFILE, *args, **kwargs):
         self.version = VERSION
-        self.costs = op_costs
+        self.cpu_profile = cpu_profile
         self.clear()
 
     def keys(self):
@@ -72,8 +71,13 @@ class MultCache:
         # Dictionaries keys in Python 3.8+ are in given in insertion order,
         # so we should insert 0 before 1.
         self.cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {
-            0: (1, 1, True, [Instruction("makezero", 0, self.costs["makezero"])]),
-            1: (0, 0, True, [Instruction("noop", 0, self.costs["noop"])]),
+            0: (
+                1,
+                1,
+                True,
+                [Instruction("makezero", 0, self.cpu_profile.costs["makezero"])],
+            ),
+            1: (0, 0, True, [Instruction("nop", 0, self.cpu_profile.costs["nop"])]),
         }
         # The following help with search statistics
         self.hits_exact = 0
@@ -109,7 +113,9 @@ class MultCache:
         if do_insert:
             self.insert(n, lower, upper, finished, instrs)
 
-    def __getitem__(self, n: int, record=True) -> Tuple[float, float, bool, List[Instruction]]:
+    def __getitem__(
+        self, n: int, record=True
+    ) -> Tuple[float, float, bool, List[Instruction]]:
         """Check if we have cached search results for "n", and return that.
         If not in cached, we will return (0, 0, {}). Note that a prior
         result has been fully only searched if if the lower bound is equal to the
@@ -164,9 +170,12 @@ class MultCache:
 
 
 if __name__ == "__main__":
-    c = MultCache()
+    multcache = MultCache()
+    multcache.check()
     # Note: dictionaries keys in Python 3.8+ are in given in insertion order.
-    assert list(c.keys()) == [0, 1], "We should have at least 0 and 1"
-    c.insert(0, 1, 1, True, [Instruction("constant", 0, 1)])
-    c.insert_or_update(1, 0, 0, True, [Instruction("noop", 0, 0)])
-    c.check()
+    assert list(multcache.keys()) == [0, 1], "We should have at least 0 and 1"
+    multcache.check()
+    multcache.insert(0, 1, 1, True, [Instruction("makezero", 0, 1)])
+    multcache.check()
+    multcache.insert_or_update(1, 0, 0, True, [Instruction("nop", 0, 0)])
+    multcache.check()

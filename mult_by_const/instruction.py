@@ -12,6 +12,7 @@ OP2SHORT = {
     "add": "+",
     "makezero": "0",
     "negate": "negate(n)",
+    "nop": "nop",
     "shift": "<<",
     "subtract": "-",
 }
@@ -59,7 +60,7 @@ class Instruction:
             instr_str += f"{op1} {OP2SHORT[self.op]} "
             instr_str += op2 if self.amount == FACTOR_FLAG else r1
         elif self.op == "makezero":
-            instr_str += "0"
+            pass
         elif self.op == "negate":
             instr_str += f"-{op1}"
         elif self.op == "shift":
@@ -198,6 +199,8 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
             return 0
         elif instr.op == "negate":
             i = -i
+        elif instr.op == "nop":
+            pass
         else:
             print(f"unknown op {instr.op}")
         pass
@@ -212,6 +215,12 @@ def str2instruction(s: str) -> Instruction:
         amount = 1 if s[1:2] == "1" else FACTOR_FLAG
         op = SHORT2OP[op_str]
     elif s in ("negate(n)", "0"):
+        amount = 0
+        op = SHORT2OP[s]
+    elif s == "makezero":
+        amount = 0
+        op = SHORT2OP[s]
+    elif s == "nop":
         amount = 0
         op = SHORT2OP[s]
     else:

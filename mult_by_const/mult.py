@@ -4,7 +4,7 @@
 from typing import List, Tuple
 from copy import deepcopy
 
-from mult_by_const.costs import OP_COSTS_DEFAULT
+from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
 
 from mult_by_const.instruction import (
     FACTOR_FLAG,
@@ -20,16 +20,17 @@ from mult_by_const.util import (
     default_shift_cost,
 )
 
-from mult_by_const.cache import MultCache, inf_cost
+from mult_by_const.cache import MultCache
 
 
 class MultConst:
     def __init__(
-            self, op_costs=OP_COSTS_DEFAULT, debug=False, shift_cost_fn=default_shift_cost, search_methods=None
+            self, cpu_model=DEFAULT_CPU_PROFILE, debug=False, shift_cost_fn=default_shift_cost, search_methods=None
     ):
 
         # Op_costs gives costs of using each kind of instruction.
-        self.op_costs = op_costs
+        self.cpu_model = cpu_model
+        self.op_costs = cpu_model.costs
         self.shift_cost = shift_cost_fn
 
         # Cache prior searches
@@ -47,7 +48,7 @@ class MultConst:
 
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
-        self.mult_cache = MultCache(op_costs)
+        self.mult_cache = MultCache(cpu_model)
 
         if debug:
             # We use indent show nesting in debug output
@@ -540,7 +541,7 @@ if __name__ == "__main__":
     # assert 4 == cost, f"Instrs should use the fact that 3 is a factor of {n}"
     # print_instructions(instrs, n, cost)
 
-    for n in [-1, 0, -3]:
+    for n in [1, 0]:
         cost, instrs = mconst.binary_sequence(n)
         print_instructions(instrs, n, cost)
 

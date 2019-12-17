@@ -8,7 +8,8 @@ import csv
 import json
 import sys
 
-from mult_by_const.cache import MultCache, inf_cost
+from mult_by_const.cpu import inf_cost
+from mult_by_const.cache import MultCache
 from mult_by_const.instruction import str2instructions
 from mult_by_const.util import print_sep
 
@@ -133,7 +134,7 @@ def reformat_cache(cache: MultCache) -> Dict[str, Dict[int, Any]]:
     """
     table: Dict[str, Dict[int, Any]] = {
         "version": cache.version,
-        "costs": cache.costs,
+        "cpu-profile": cache.cpu_profile.to_dict(),
         "products": {},
     }
     products = table["products"]

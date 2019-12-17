@@ -10,12 +10,12 @@
     "0": {
       "cost": 1,
       "search-status": "completed",
-      "sequence": "[constant 0]"
+      "sequence": "[0]"
     },
     "1": {
       "cost": 0,
       "search-status": "completed",
-      "sequence": "[noop]"
+      "sequence": "[nop]"
     },
     "2": {
       "cost": 1,

@@ -1,6 +1,6 @@
 n	cost	search-status	sequence
-0	1	completed	[constant 0]
-1	0	completed	[noop]
+0	1	completed	[0]
+1	0	completed	[nop]
 2	1	completed	[<< 1]
 3	2	completed	[<< 1, +1]
 4	1	completed	[<< 2]
