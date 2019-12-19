@@ -11,7 +11,7 @@ from mult_by_const.binary_method import binary_sequence, binary_sequence_inner
 from mult_by_const.instruction import (
     FACTOR_FLAG,
     OP_R1,
-    # REVERSE_SUBTRACT_1, # Will be adding soon
+    REVERSE_SUBTRACT_1, # Will be adding soon
     Instruction,
     instruction_sequence_cost,
     instruction_sequence_value,
@@ -127,6 +127,7 @@ class MultConst(MultConstClass):
         candidate_instrs: List[
             Instruction
         ],  # The best current candidate sequencer. It or a different sequence is returned.
+        op_flag=OP_R1
     ) -> Tuple[float, List[Instruction]]:
         op_str = "add" if increment < 0 else "subtract"
         op_cost = self.op_costs[op_str]
@@ -147,7 +148,7 @@ class MultConst(MultConstClass):
                     self.debug_msg(f"Neighbor {n_inc} update {try_cost} < {upper}.")
 
                 n_instrs = deepcopy(neighbor_instrs)
-                n_instrs.append(Instruction(op_str, OP_R1, op_cost))
+                n_instrs.append(Instruction(op_str, op_flag, op_cost))
                 n_cost = instruction_sequence_cost(n_instrs)
                 self.mult_cache.insert_or_update(n, n_cost, n_cost, True, n_instrs)
 
@@ -204,6 +205,23 @@ class MultConst(MultConstClass):
         ],  # The best current candidate sequencer. It or a different sequence is returned.
     ) -> Tuple[float, List[Instruction]]:
         return self.try_plus_offset(n, -1, upper, lower, instrs, candidate_instrs)
+
+    def search_negate_subtract_one(
+        self,
+        n: int,  # Number we are seeking
+        upper: float,  # cost of a valid instruction sequence
+        lower: float,  # cost of instructions seen so far
+        instrs: List[Instruction],  # An instruction sequence with cost "upper".
+        # We build on this.
+        candidate_instrs: List[
+            Instruction
+        ],  # The best current candidate sequencer. It or a different sequence is returned.
+    ) -> Tuple[float, List[Instruction]]:
+        if n > 1:
+            # Negative numbers never take less then their positive counterpart,
+            # so there is no benefit in reversing a subtraction here.
+            return (upper, instrs)
+        return self.try_plus_offset(-n, -1, upper, lower, instrs, candidate_instrs, REVERSE_SUBTRACT_1)
 
     def search_add_one(
         self,

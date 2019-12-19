@@ -83,6 +83,22 @@ class MultConstClass:
             pass
         return (n, cost)
 
+    def need_negation(self, n: int) -> Tuple[int, bool]:
+        """
+        See if we need to negate n and check that the CPU model can handle negation.
+        If the CPU can't handle a negation, raise an error.
+        Return whether the absolute value of n and whether negation is needed.
+        """
+        if n < 0:
+            if not self.cpu_model.can_negate():
+                raise TypeError(
+                    f"cpu model {self.cpu_model.name} doesn't support multiplication by negative numbers"
+                )
+            need_negation = True
+            n = -n
+        else:
+            need_negation = False
+        return n, need_negation
 
 if __name__ == "__main__":
     mconst = MultConstClass()

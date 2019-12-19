@@ -78,15 +78,7 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
         return (self.op_costs["zero"], [Instruction("zero", 0, self.op_costs["zero"])])
     orig_n = n
 
-    if n < 0:
-        if not self.cpu_model.can_negate():
-            raise TypeError(
-                f"cpu model {self.cpu_model.name} doesn't support multiplication by negative numbers"
-            )
-        need_negation = True
-        n = -n
-    else:
-        need_negation = False
+    n, need_negation = self.need_negation(n)
 
     assert n > 0
 
@@ -122,8 +114,9 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
         # Handle low-order 1's via "adds", and also "subtracts" if subtracts are available.
         #
         one_run_count, m = consecutive_ones(n)
-        if self.cpu_model.can_subtract() and one_run_count > 2:
-            if need_negation and self.cpu_model.subtract_can_negate():
+        try_reverse_subtract = need_negation and self.cpu_model.subtract_can_negate()
+        if self.cpu_model.can_subtract() and (one_run_count > 2 or try_reverse_subtract):
+            if try_reverse_subtract:
                 cost += add_instruction(bin_instrs, "subtract", REVERSE_SUBTRACT_1)
                 need_negation = False
             else:
@@ -158,6 +151,6 @@ if __name__ == "__main__":
 
     mconst = MultConstClass(debug=True)
 
-    for n in [1, 0, -1, -7, 340]:
+    for n in [1, 0, -1, -7, -3]:
         cost, instrs = binary_sequence(mconst, n)
         print_instructions(instrs, n, cost)
