@@ -62,7 +62,17 @@ def binary_sequence(self: MultConstClass, n: int) -> Tuple[float, List[Instructi
     return binary_sequence_inner(self, n)
 
 
-def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Instruction]]:
+def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Instruction]]:  # noqa: C901
+
+    def add_instruction(bin_instrs: List[Instruction], op_name: str, op_flag: int) -> float:
+        cost = self.op_costs[op_name]
+        bin_instrs.append(Instruction(op_name, op_flag, cost))
+        return cost
+
+    def append_instrs(cache_instrs: List[Instruction], bin_instrs, cache_upper: float) -> float:
+        cache_instrs.reverse()  # Because we compute in reverse order here
+        bin_instrs += cache_instrs
+        return cache_upper
 
     if n == 0:
         return (self.op_costs["zero"], [Instruction("zero", 0, self.op_costs["zero"])])
@@ -88,9 +98,7 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
         if need_negation:
             cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[-n]
             if cache_upper < inf_cost:
-                cost += cache_upper
-                cache_instrs.reverse()  # Because we compute in reverse order here
-                bin_instrs += cache_instrs
+                cost += append_instrs(cache_instrs, bin_instrs, cache_upper)
                 need_negation = False
                 break
 
@@ -103,9 +111,7 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
             # So we still have to continue in order to potentially find
             # a shorter sequence using a subtract.
             if not (need_negation and self.cpu_model.subtract_can_negate()):
-                cost += cache_upper
-                cache_instrs.reverse()  # Because we compute in reverse order here
-                bin_instrs += cache_instrs
+                cost += append_instrs(cache_instrs, bin_instrs, cache_upper)
                 break
 
         n, cost = self.make_odd(n, cost, bin_instrs)
@@ -117,23 +123,16 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
         #
         one_run_count, m = consecutive_ones(n)
         if self.cpu_model.can_subtract() and one_run_count > 2:
-            subtract_cost = self.op_costs["subtract"]
             if need_negation and self.cpu_model.subtract_can_negate():
-                bin_instrs.append(
-                    Instruction("subtract", REVERSE_SUBTRACT_1, subtract_cost)
-                )
+                cost += add_instruction(bin_instrs, "subtract", REVERSE_SUBTRACT_1)
                 need_negation = False
             else:
-                bin_instrs.append(Instruction("subtract", OP_R1, subtract_cost))
+                cost += add_instruction(bin_instrs, "subtract", OP_R1)
 
-            subtract_cost = self.shift_cost(one_run_count)
-            cost += subtract_cost
             n += 1
             pass
         else:
-            add_cost = self.op_costs["add"]
-            bin_instrs.append(Instruction("add", OP_R1, add_cost))
-            cost += add_cost
+            cost += add_instruction(bin_instrs, "add", OP_R1)
             n -= 1
             pass
         pass
@@ -141,9 +140,7 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
     bin_instrs.reverse()
 
     if need_negation:
-        negate_cost = self.op_costs["negate"]
-        bin_instrs.append(Instruction("negate", OP_R1, negate_cost))
-        cost += negate_cost
+        cost += add_instruction(bin_instrs, "negate", OP_R1)
 
     if self.debug:
         self.debug_msg(

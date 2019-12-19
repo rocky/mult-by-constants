@@ -153,7 +153,7 @@ class Instruction:
 
 
 def print_instructions(
-    instrs: List[Instruction], n=None, expected_cost=None, prefix=""
+    instrs: List[Instruction], n=None, stored_cost=None, prefix=""
 ) -> None:
     """Print the instruction-sequnce `instrs` in a nice, understandable way.
     """
@@ -218,8 +218,8 @@ def print_instructions(
         n is None or n == value
     ), f"Multiplier should be {n}, not computed value {value}"
     assert (
-        expected_cost is None or expected_cost == cost
-    ), f"Cost should be {expected_cost}, not computed value {cost}"
+        stored_cost is None or stored_cost == cost
+    ), f"Stored cost for {n} is {stored_cost}, but computed value is {cost}"
     return
 
 

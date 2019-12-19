@@ -242,7 +242,7 @@ class MultConst(MultConstClass):
             pass
         return
 
-    def alpha_beta_search(
+    def alpha_beta_search(   # noqa: C901
         self, n: int, upper: float
     ) -> Tuple[float, List[Instruction]]:
         """Alpha-beta search
