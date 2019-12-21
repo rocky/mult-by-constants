@@ -27,7 +27,7 @@ check-python pytest:
 
 #: Run Software -- Practice and Experience C code tests
 check-spe86:
-	cd spe86 && make check
+	cd ../spe86 && make check
 
 #: Static type checking
 type-check:
