@@ -10,6 +10,10 @@ from mult_by_const.instruction import (
     check_instruction_sequence_value,
     Instruction,
     instruction_sequence_cost,
+    OP_R1,
+    FACTOR_FLAG,
+    REVERSE_SUBTRACT_1,
+    REVERSE_SUBTRACT_FACTOR,
 )
 
 from mult_by_const.version import VERSION
@@ -71,14 +75,20 @@ class MultCache:
         # Dictionaries keys in Python 3.8+ are in given in insertion order,
         # so we should insert 0 before 1.
         self.cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {
-            0: (
-                1,
-                1,
-                True,
-                [Instruction("zero", 0, self.cpu_profile.costs["zero"])],
-            ),
+            0: (1, 1, True, [Instruction("zero", 0, self.cpu_profile.costs["zero"])]),
             1: (0, 0, True, [Instruction("nop", 0, self.cpu_profile.costs["nop"])]),
         }
+
+        if "negate" in self.cpu_profile.costs:
+            negate_cost = self.cpu_profile.costs["negate"]
+            self.cache[-1] = (
+                negate_cost,
+                negate_cost,
+                True,
+                [Instruction("negate", 0, negate_cost)],
+            )
+            pass
+
         # The following help with search statistics
         self.hits_exact = 0
         self.hits_partial = 0
@@ -107,7 +117,9 @@ class MultCache:
         """
         if n in self.cache:
             cache_upper = self.cache[n][1]
-            do_insert = cache_upper > upper
+            do_insert = cache_upper > upper or (
+                cache_upper == upper and not self.cache[n][3]
+            )
         else:
             do_insert = True
 
@@ -150,6 +162,10 @@ class MultCache:
            * key "n" has a cache entry.
            * non-empty field values are "better" than cached entries.
 
+        There is a special case for "finished". If "upper" is better than
+        the cached entry, and "finished" is is None (unknown) as opposed
+        to "False" or "True", then it is set "True".
+
         See also "insert" or "insert_or_update"
         """
         cache_lower, cache_upper, cache_finished, cache_instrs = self.cache.get(
@@ -161,22 +177,90 @@ class MultCache:
         if lower is not None and lower > cache_lower:
             cache_lower = lower
         if upper is not None and upper < cache_upper:
+            assert instrs is not None
             cache_upper = upper
             worse = False
         if finished is not None and not cache_finished:
             cache_finished = finished
         if instrs is not None and not worse:
             cache_instrs = instrs
+        if finished is None and not worse:
+            cache_finished = True
+            cache_lower = cache_upper
         self.cache[n] = (cache_lower, cache_upper, cache_finished, cache_instrs)
+
+    def update_sequence_partials(self, instrs: List[Instruction]) -> None:  # noqa: C901
+        """Make sure partial products for `instrs` are in cache.
+        """
+        n, m = 1, 1
+        cost: float = 0
+        for i, instr in enumerate(instrs):
+            if instr.op == "shift":
+                m = n
+                n <<= instr.amount
+            elif instr.op == "add":
+                if instr.amount == OP_R1:
+                    n += 1
+                elif instr.amount == FACTOR_FLAG:
+                    n += m
+                else:
+                    print(f"Invalid flag on add in {instr}")
+                    pass
+                pass
+            elif instr.op == "subtract":
+                if instr.amount == OP_R1:
+                    n -= 1
+                elif instr.amount == REVERSE_SUBTRACT_1:
+                    n = 1 - n
+                elif instr.amount == FACTOR_FLAG:
+                    n -= m
+                elif instr.amount == REVERSE_SUBTRACT_FACTOR:
+                    n = m - n
+                else:
+                    raise RuntimeError(f"Invalid flag on subtract in {instr}")
+            elif instr.op == "zero":
+                return
+            elif instr.op == "negate":
+                n = -n
+            elif instr.op == "nop":
+                pass
+            else:
+                print(f"unknown op {instr.op}")
+            cost += instr.cost
+            self.insert_or_update(n, 0, cost, False, instrs[0 : i + 1])
+            pass
 
 
 if __name__ == "__main__":
     multcache = MultCache()
     multcache.check()
     # Note: dictionaries keys in Python 3.8+ are in given in insertion order.
-    assert list(multcache.keys()) == [0, 1], "We should have at least 0 and 1"
+    assert list(multcache.keys()) == [0, 1, -1], "We should have at least -1, 0 and 1"
     multcache.check()
     multcache.insert(0, 1, 1, True, [Instruction("zero", 0, 1)])
     multcache.check()
     multcache.insert_or_update(1, 0, 0, True, [Instruction("nop", 0, 0)])
     multcache.check()
+
+    instrs = [
+        Instruction("shift", 4),
+        Instruction("add", 1),
+        Instruction("shift", 2),
+        Instruction("subtract", FACTOR_FLAG),
+        Instruction("negate", 0),
+    ]
+    multcache.update_sequence_partials(instrs)
+    multcache.check()
+    from mult_by_const.io import dump
+
+    dump(multcache)
+    multcache.clear()
+    instrs = [
+        Instruction("shift", 3),
+        Instruction("subtract", 1),
+        Instruction("shift", 2),
+        Instruction("add", 1),
+    ]
+    multcache.update_sequence_partials(instrs)
+    multcache.check()
+    dump(multcache)

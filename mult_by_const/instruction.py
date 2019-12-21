@@ -251,36 +251,52 @@ def instruction_sequence_cost(instrs: List[Instruction]) -> float:
         pass
     return cost
 
-
 def instruction_sequence_value(instrs: List[Instruction]) -> int:
     """Return the cost associated with instruction sequence `instrs`.
     """
-    i, j = 1, 1
+    n, m = 1, 1
     for instr in instrs:
         if instr.op == "shift":
-            j = i
-            i <<= instr.amount
+            m = n
+            n <<= instr.amount
         elif instr.op == "add":
-            if instr.amount == 1:
-                i += 1
+            if instr.amount == OP_R1:
+                n += 1
+            elif instr.amount == FACTOR_FLAG:
+                n += m
             else:
-                i += j
+                print(f"Invalid flag on add in {instr}")
+                pass
+            pass
         elif instr.op == "subtract":
-            if instr.amount == 1:
-                i -= 1
+            if instr.amount == OP_R1:
+                n -= 1
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                n = 1 - n
+            elif instr.amount == FACTOR_FLAG:
+                n -= m
+            elif instr.amount == REVERSE_SUBTRACT_FACTOR:
+                n = m - n
             else:
-                i -= j
+                print(f"Invalid flag on subtract in {instr}")
         elif instr.op == "zero":
             return 0
         elif instr.op == "negate":
-            i = -i
+            n = -n
         elif instr.op == "nop":
             pass
         else:
             print(f"unknown op {instr.op}")
         pass
 
-    return i
+    return n
+
+def find_negatable(instrs: List[Instruction]) -> int:
+    for (i, inst) in enumerate(instrs):
+        if inst.op in ("negate", "subtract"):
+            return i
+        pass
+    return -1
 
 
 # The next to functions assist in loading and dumping data.
@@ -328,6 +344,7 @@ if __name__ == "__main__":
         Instruction("subtract", FACTOR_FLAG),
         Instruction("negate", 0),
     ]
+    print(find_negatable(instrs))
     print(instrs)
     instrs2 = str2instructions("[n<<4, n+1, n<<2, n-m, -n]")
     print(instrs2)

@@ -8,6 +8,7 @@ load, and dump.
 import click
 import os
 import sys
+from mult_by_const.binary_method import binary_sequence
 from mult_by_const.mult import MultConst
 from mult_by_const.instruction import print_instructions
 from mult_by_const.io import dump, dump_csv, dump_json, dump_yaml
@@ -56,7 +57,7 @@ def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
     if to:
         for number in range(2, to + 1):
             if binary_method:
-                cost, instrs = mult.binary_sequence(number)
+                cost, instrs = binary_sequence(mult, number)
             else:
                 cost, instrs = mult.find_mult_sequence(number)
                 pass
@@ -65,7 +66,7 @@ def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
     else:
         for number in numbers:
             if binary_method:
-                cost, instrs = mult.binary_sequence(number)
+                cost, instrs = binary_sequence(mult, number)
             else:
                 cost, instrs = mult.find_mult_sequence(number)
 
