@@ -23,7 +23,7 @@ test: check
 
 #: Run Python (pytest) tests
 check-python pytest:
-	py.test python/pytest
+	py.test pytest
 
 #: Run Software -- Practice and Experience C code tests
 check-spe86:
@@ -31,7 +31,7 @@ check-spe86:
 
 #: Static type checking
 type-check:
-	mypy python/mult_by_const
+	mypy mult_by_const
 
 #: Run all tests with verbose debug-output
 check-debugged:
@@ -41,16 +41,14 @@ check-debugged:
 clean: clean_pyc
 	$(PYTHON) ./setup.py $@
 	find . -name __pycache__ -exec rm -fr {} || true \;
-	(cd test && $(MAKE) clean)
-	(cd test_unit && $(MAKE) clean)
 
 #: Create source (tarball) and wheel distribution
 dist: clean
-	cd python && $(PYTHON) ./setup.py sdist bdist_wheel
+	$(PYTHON) ./setup.py sdist bdist_wheel
 
 #: Remove .pyc files
 clean_pyc:
-	( cd xdis && $(RM) -f *.pyc */*.pyc )
+	( cd mult_by_const && $(RM) -fr  *.pyc */*.pyc )
 
 #: Create source tarball
 sdist:
