@@ -82,6 +82,8 @@ class Instruction:
         if self.op == "add":
             if self.amount == OP_R1:
                 instr_str += f"{op1} + {r1}"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                instr_str += f"{r1} - {op1}"
             elif self.amount == FACTOR_FLAG:
                 instr_str += f"{op1} + {op2}"
             else:
@@ -116,6 +118,8 @@ class Instruction:
         if self.op == "add":
             if self.amount == FACTOR_FLAG:
                 op_str += " n, m"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                op_str += " 1, n"
             elif self.amount == 1:
                 op_str += " n, 1"
             else:
@@ -185,6 +189,8 @@ def print_instructions(
         elif instr.op == "add":
             if instr.amount == OP_R1:
                 value += 1
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                value = -(value + 1)
             elif instr.amount == FACTOR_FLAG:
                 value += previous_value
             else:
@@ -264,6 +270,8 @@ def instruction_sequence_value(instrs: List[Instruction]) -> int:
                 n += 1
             elif instr.amount == FACTOR_FLAG:
                 n += m
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                n = -(n - 1)
             else:
                 print(f"Invalid flag on add in {instr}")
                 pass

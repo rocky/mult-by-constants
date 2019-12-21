@@ -18,7 +18,7 @@ All searching methods start with "search" have the same interface:
 from typing import List, Tuple
 from mult_by_const.binary_method import binary_sequence_inner
 from mult_by_const.cpu import inf_cost
-from mult_by_const.instruction import (REVERSE_SUBTRACT_1, Instruction, instruction_sequence_cost)
+from mult_by_const.instruction import (OP_R1, REVERSE_SUBTRACT_1, Instruction, instruction_sequence_cost)
 
 def search_add_one(
     self,
@@ -28,7 +28,7 @@ def search_add_one(
     instrs: List[Instruction],
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
-    return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs)
+    return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs, OP_R1)
 
 def search_binary_method(
     self,
@@ -197,4 +197,4 @@ def search_subtract_one(
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
 
-    return self.try_plus_offset(n, -1, upper, lower, instrs, candidate_instrs)
+    return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs, OP_R1)

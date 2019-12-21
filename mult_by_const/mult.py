@@ -10,7 +10,7 @@ from mult_by_const.binary_method import binary_sequence
 from mult_by_const.search_methods import (
     search_add_one,
     search_add_or_subtract_one,
-    search_binary_method,
+    # search_binary_method,
     search_cache,
     search_negate_subtract_one,
     search_short_factors,
@@ -19,7 +19,6 @@ from mult_by_const.search_methods import (
 
 from mult_by_const.instruction import (
     FACTOR_FLAG,
-    OP_R1,
     Instruction,
     instruction_sequence_cost,
     instruction_sequence_value,
@@ -90,9 +89,9 @@ class MultConst(MultConstClass):
         candidate_instrs: List[
             Instruction
         ],  # The best current candidate sequencer. It or a different sequence is returned.
-        op_flag=OP_R1,
+        op_flag,
     ) -> Tuple[float, List[Instruction]]:
-        op_str = "add" if increment < 0 else "subtract"
+        op_str = "add" if increment < 0 and n > 0 else "subtract"
         op_cost = self.op_costs[op_str]
         try_lower = lower + op_cost
         if try_lower < upper:

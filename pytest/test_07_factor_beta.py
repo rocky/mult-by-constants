@@ -1,12 +1,26 @@
 from mult_by_const import MultConst, print_instructions, binary_method
+from mult_by_const.search_methods import (
+    search_add_or_subtract_one,
+    search_negate_subtract_one,
+    search_short_factors,
+    search_subtract_one,
+)
+
 import os
 
 
 def test_factor():
     debug = "DEBUG" in os.environ
     mconst = MultConst(debug=debug)
+    mconst.search_methods = (
+        search_short_factors,
+        search_add_or_subtract_one,
+        search_negate_subtract_one
+    )
+
     n = 27
     bin_cost, bin_instrs = binary_method.binary_sequence(mconst, n)
+
     if debug:
         print_instructions(bin_instrs, n, bin_cost)
     result = []
