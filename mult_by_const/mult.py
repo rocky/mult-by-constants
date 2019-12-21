@@ -8,10 +8,13 @@ from mult_by_const.multclass import MultConstClass
 from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
 from mult_by_const.binary_method import binary_sequence
 from mult_by_const.search_methods import (
+    search_add_one,
+    search_add_or_subtract_one,
+    search_binary_method,
     search_cache,
     search_negate_subtract_one,
-    search_add_or_subtract_one,
     search_short_factors,
+    search_subtract_one,
 )
 
 from mult_by_const.instruction import (
@@ -34,15 +37,6 @@ class MultConst(MultConstClass):
         search_methods=None,
     ):
         super().__init__(cpu_model, debug, shift_cost_fn, search_methods)
-
-        if search_methods is None:
-            self.search_methods = (
-                search_cache,
-                search_short_factors,
-                search_add_or_subtract_one,
-                search_negate_subtract_one,
-            )
-            pass
 
     # FIXME: move info search_methods
     def try_shift_op_factor(
@@ -131,7 +125,7 @@ class MultConst(MultConstClass):
 
         return upper, candidate_instrs
 
-    def find_mult_sequence(self, n: int) -> Tuple[float, List[Instruction]]:
+    def find_mult_sequence(self, n: int, search_methods=None) -> Tuple[float, List[Instruction]]:
         """Top-level searching routine. Computes binary method upper bound
         and then does setup to the alpha-beta search
         """
@@ -139,6 +133,24 @@ class MultConst(MultConstClass):
         cache_lower, cache_upper, finished, cache_instr = self.mult_cache[n]
         if finished:
             return cache_upper, cache_instr
+
+        if search_methods is None:
+            if n > 0:
+                self.search_methods = (
+                    search_cache,
+                    search_short_factors,
+                    search_subtract_one,
+                    search_add_one,
+                )
+            else:
+                self.search_methods = (
+                    search_cache,
+                    search_short_factors,
+                    search_add_or_subtract_one,
+                    search_negate_subtract_one,
+                )
+                pass
+            pass
 
         if cache_upper == inf_cost:
             # The binary sequence gives a workable upper bound on the cost
@@ -285,9 +297,9 @@ if __name__ == "__main__":
     print(instrs)
     print_instructions(instrs, n, cost)
     from mult_by_const.io import dump
+    dump(mconst.mult_cache)
 
-    n = 17
-    dump(mconst.mult_cache)
-    cost, instrs = mconst.find_mult_sequence(n)
-    print_instructions(instrs, n, cost)
-    dump(mconst.mult_cache)
+    # n = 17
+    # cost, instrs = mconst.find_mult_sequence(n)
+    # print_instructions(instrs, n, cost)
+    # dump(mconst.mult_cache)
