@@ -43,7 +43,7 @@ def search_binary_method(
     try_cost = cache_upper + instruction_sequence_cost(instrs)
     if try_cost < upper:
         if self.debug:
-            self.debug_msg(f"Include cache value {n} in sequence; {try_cost} < {upper}.")
+            self.debug_msg(f"Include cache value {n} in sequence; cost {try_cost} < {upper}.")
         if n == 1:
             candidate_instrs = instrs
         else:
@@ -66,11 +66,11 @@ def search_cache(
     try_cost = cache_upper + instruction_sequence_cost(instrs)
     if try_cost < upper:
         if self.debug:
-            self.debug_msg(f"Include cache value {n} in sequence; {try_cost} < {upper}.")
+            self.debug_msg(f"Include cache value {n} in sequence; cost {try_cost} < {upper}.")
         if n == 1:
             candidate_instrs = instrs
         else:
-            candidate_instrs = instrs + cache_instrs
+            candidate_instrs = cache_instrs + instrs
         upper = try_cost
     return upper, candidate_instrs
 

@@ -206,7 +206,6 @@ class MultCache:
                 else:
                     print(f"Invalid flag on add in {instr}")
                     pass
-                pass
             elif instr.op == "subtract":
                 if instr.amount == OP_R1:
                     n -= 1
@@ -227,7 +226,7 @@ class MultCache:
             else:
                 print(f"unknown op {instr.op}")
             cost += instr.cost
-            self.insert_or_update(n, 0, cost, False, instrs[0 : i + 1])
+            self.insert_or_update(n, 0, cost, False, instrs[0 : i + 1])  # noqa
             pass
 
 

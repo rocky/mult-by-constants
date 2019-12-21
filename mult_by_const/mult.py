@@ -59,7 +59,7 @@ class MultConst(MultConstClass):
                 m = n // factor
                 if self.debug:
                     self.debug_msg(f"Trying factor {factor}...")
-                try_cost, try_instrs = self.alpha_beta_search(m, lower=0, upper=upper - lower)
+                try_cost, try_instrs = self.alpha_beta_search(m, lower=lower, upper=upper)
                 if lower + try_cost < upper:
                     if self.debug:
                         self.debug_msg(
@@ -100,9 +100,7 @@ class MultConst(MultConstClass):
                 self.debug_msg(f"Trying neighbor {n_inc} of {n}...")
                 pass
 
-            neighbor_cost, neighbor_instrs = self.alpha_beta_search(
-                n_inc, 0, upper - try_lower
-            )
+            neighbor_cost, neighbor_instrs = self.alpha_beta_search(n_inc, try_lower, upper)
 
             try_cost = neighbor_cost + try_lower
             if try_cost < upper:
