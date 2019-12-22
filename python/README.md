@@ -16,8 +16,6 @@
 
 <!-- markdown-toc end -->
 
-![Instruction-Sequence Costs for the first 5,000 Integers](./graphs/5000-bin-vs-stdcost.svg)
-
 Synopsis
 ========
 
@@ -204,7 +202,7 @@ Although the binary method is great for numbers under 100:
 
 When we get to larger number it tends to jump about wildly and on average more than double the number of instructions in the range from 1 to 5000.
 
-![Instruction-Sequence Costs for the first 5,000 Integers](./graphs/5000-bin-vs-stdcost.svg)cost.svg)
+![Instruction-Sequence Costs for the first 5,000 Integers](../graphs/5000-bin-vs-stdcost.svg)cost.svg)
 
 
 Alpha-beta pruning

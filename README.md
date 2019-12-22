@@ -28,7 +28,7 @@ We drill into each of these below.
 # As a library and command-line utility
 
 The code is being more actively developed in Python at first, although there is some older C code that we will update and build.
-The python code is in [_spe_](../spe86) and the C code is in [_spe_](../spe86), [_vinc17/rigo_](./vinc17/rigo).
+The python code is in [_python_](./python) and the C code is in [_spe_](./spe86), and [_vinc17/rigo_](./vinc17/rigo).
 
 
 ## As a library
