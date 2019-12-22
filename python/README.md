@@ -7,13 +7,12 @@
 - [Introduction](#introduction)
     - [As a library](#as-a-library)
     - [As a command-line utility](#as-a-command-line-utility)
-    - [Instruction Tables](#instruction-tables)
-    - [Data Analysis](#data-analysis)
+    - [Tools for generating graphs and doing data analysis](#tools-for-generating-graphs-and-doing-data-analysis)
 - [Examples](#examples)
     - [Instruction Sequences](#instruction-sequences)
     - [Alpha-beta pruning](#alpha-beta-pruning)
     - [Cache entries](#cache-entries)
-- [References](#references)
+    - [Dumping Data](#dumping-data)
 
 <!-- markdown-toc end -->
 
@@ -24,7 +23,7 @@ Synopsis
 
 Python API:
 
-```Python
+```python
 from mult_by_const import MultConst, load_yaml, dump, dump_csv, print_instructions
 
 # Figure out a multiplication sequence for n
@@ -56,12 +55,11 @@ See also the directories [_spe86_](./spe86) and [_vinc17/rigo_](./vinc17/rigo) f
 Introduction
 ============
 
-This repository serves several purposes:
+This repository contains Python-related code for:
 
-* As a Python library for getting sequences of instructions to perform integer multiplications
+* As a library for getting sequences of instructions to perform integer multiplications
 * As a command-line utility for doing the same
-* As a place to store Optimal instruction-sequence tables, and
-* for data analysis
+* Tools for generating graphs and doing data analysis
 
 We drill into each of these below.
 
@@ -87,20 +85,10 @@ The command-line program also allows for the internal cache values to be dumped 
 
 Finally the command-line programs allows you to iterate up to some value, starting from scratch or starting from a previously-computed table. And this leads into the next purpose...
 
-Instruction Tables
--------------------
+Tools for generating graphs and doing data analysis
+---------------------------------------------------
 
-Instead of using our code to search for sequences, you can use tables that have been previously generatated. This is again suitable for use inside a compiler, or perhaps a general-purpose multiplication routine, which does a table lookup for "small" values. For larger ones a general-purpose routines can use this as a base table from which to do the standard multiplcation algorithm. For example, people learning multiplication learn by rote the multiplication table for pairs of numbers from 0 to 10.
-
-Initially we built the tables using code here. If you find a way to improve entires in the table, please send them along an it will be incorporated into the table.
-
-And having tables also allows us to improve sequences going in the other direction. Rather than start with a number and searching for a sequence as output, we can start with a table
-and look numbers that will probably have short sequences and improve the table. We intend to write code for this as well.
-
-Data Analysis
--------------
-
-Having the tables in hand, we can then start analyzing how the optimum sequence grows with the value of a number.
+This code is the least worked out. But the idea is to use the programs to start collecting aggregate data.
 
 
 Examples
@@ -112,21 +100,20 @@ Instruction Sequences
 First, a very simple example.
 
 ```
-$ mult-by-const 41
 ------------------------------------------------------------
 Instruction sequence for 41 = 101001, cost:  4:
-op: shift(2),   	cost:  1,	value:   4
-op: add(1),     	cost:  1,	value:   5
-op: shift(3),   	cost:  1,	value:  40
-op: add(1),     	cost:  1,	value:  41
-============================================================
+        1: r[1] = <initial value>; cost:  0
+        4: r[n] = r[1] << 2;       cost:  1
+        5: r[n] = r[n] + r[1];     cost:  1
+       40: r[n] = r[n] << 3;       cost:  1
+       41: r[n] = r[n] + r[1];     cost:  1
 ```
 
-The above sequence consisting of only "shifts" (a multiplication by a power of 2) and "add"s. The number in parenthesis after "shift" gives the shift amount; so `shift(2)` is a multiplication by 2^2=4; `shift(3)` is 2^3=8.
+The above sequence consisting of only "shifts" (a multiplication by a power of 2) and "add"s. Above, `r[n] << 2` is a multiplication of `r[n]` by 2^2=4; `r[n] << 3` is a multiplication of `r[n] by 2^3=8.
 
 The sequence above follows the "binary sequence" method for computing a multiplication: each 1-bit other than the leading 1-bit becomes a "shift" by some amount followed by an "add" of one; the "shifts" and "adds" alternate. If the number is even, there is also a final "shift" instruction. Since there are three one-bits and the number is odd, this gives 4=2*(3-1) instructions.
 
-If we start out with _x_ in a variable, the sequence computed is x, 4x, (4+1)x=5x, (5x8)x=40x, (40+1)x=41x. Notice that we list these intermediate values at the right of the listing above.
+If we start out with _x_ in a variable, the sequence computed is x, 4x, (4+1)x=5x, (5x8)x=40x, (40+1)x=41x. Notice that we list these intermediate values are given at the left.
 
 Let's try another number to go deeper into the problem.
 
@@ -135,10 +122,11 @@ Let's try another number to go deeper into the problem.
 $ mult-by-const 95
 ------------------------------------------------------------
 Instruction sequence for 95 = 1011111, cost:  4:
-op: shift(1),   	cost:  1,	value:   2
-op: add(1),     	cost:  1,	value:   3
-op: shift(5),   	cost:  1,	value:  96
-op: subtract(1),	cost:  1,	value:  95
+        1: r[1] = <initial value>; cost:  0
+        2: r[n] = r[1] << 1;       cost:  1
+        3: r[n] = r[n] + r[1];     cost:  1
+       96: r[n] = r[n] << 5;       cost:  1
+       95: r[n] = r[n] - r[1];     cost:  1
 ============================================================
 ```
 
@@ -154,28 +142,30 @@ But the binary method isn't always optimum, even for numbers under 100. Consider
 $ mult-by-const --binary-method 51
 ------------------------------------------------------------
 Instruction sequence for 51 = 110011, cost:  6:
-op: shift(1),   	cost:  1,	value:   2
-op: add(1),     	cost:  1,	value:   3
-op: shift(3),   	cost:  1,	value:  24
-op: add(1),     	cost:  1,	value:  25
-op: shift(1),   	cost:  1,	value:  50
-op: add(1),     	cost:  1,	value:  51
-============================================================
+        1: r[1] = <initial value>; cost:  0
+        2: r[n] = r[1] << 1;       cost:  1
+        3: r[n] = r[n] + r[1];     cost:  1
+       24: r[n] = r[n] << 3;       cost:  1
+       25: r[n] = r[n] + r[1];     cost:  1
+       50: r[n] = r[n] << 1;       cost:  1
+       51: r[n] = r[n] + r[1];     cost:  1
 ```
-we get 6 instructions. But we can do better if we factor 51=17*3:
+we get 6 instructions. But we can do better if we factor 51=3*17:
 ```console
 $ mult-by-const 51
 ------------------------------------------------------------
 Instruction sequence for 51 = 110011, cost:  4:
-op: shift(4),   	cost:  1,	value:  16
-op: add(1),     	cost:  1,	value:  17
-op: shift(1),   	cost:  1,	value:  34
-op: add(n),     	cost:  1,	value:  51
+        1: r[1] = <initial value>; cost:  0
+        2: r[n] = r[1] << 1;       cost:  1
+        3: r[n] = r[n] + r[1];     cost:  1
+       48: r[n] = r[n] << 4;       cost:  1
+       51: r[n] = r[n] + r[n-1];   cost:  1
 ============================================================
 ```
 
-Above, notice that the final instruction is `add(n)` rather than `add(1)` as we have seen before; `add(n)` means that we are adding value of the previous sum, here 17. In other words: 17+34=51.
-`subtract(n)` is also possible. You'll see that used if you try a multiplication by 341.
+Above, notice that the final instruction is `r[n] + r[n-1]` rather than `r[n] = r[n] + r[1]` as we have seen before; `r[n] + r[n-1]` means that we are adding value of the previous sum, here 17. In other words: 17+34=51. Previously the total number of registers needed was limited to two registers; the initial register was left unmodified, and another register accumulated the product. In this example, 3 registers are needed as a result of that last instruction.
+
+`r[n] + r[n-1]` is also possible. You'll see that used if you try a multiplication by 341.
 
 
 I close this section with a mutiplication by a large number:
@@ -183,35 +173,48 @@ I close this section with a mutiplication by a large number:
 $ mult-by-const 12345678
 ------------------------------------------------------------
 Instruction sequence for 12345678 = 101111000110000101001110, cost: 13:
-op: shift(6),   	cost:  1,	value:  64
-op: add(1),     	cost:  1,	value:  65
-op: shift(2),   	cost:  1,	value: 260
-op: add(n),     	cost:  1,	value: 325
-op: shift(2),   	cost:  1,	value: 1300
-op: subtract(1),	cost:  1,	value: 1299
-op: shift(5),   	cost:  1,	value: 41568
-op: add(n),     	cost:  1,	value: 42867
-op: shift(4),   	cost:  1,	value: 685872
-op: subtract(1),	cost:  1,	value: 685871
-op: shift(3),   	cost:  1,	value: 5486968
-op: add(n),     	cost:  1,	value: 6172839
-op: shift(1),   	cost:  1,	value: 12345678
+        1: r[1] = <initial value>; cost:  0
+        1: r[n] = r[n];            cost:  0
+        4: r[n] = r[n] << 2;       cost:  1
+        5: r[n] = r[n] + r[n-1];   cost:  1
+      320: r[n] = r[n] << 6;       cost:  1
+      325: r[n] = r[n] + r[n-1];   cost:  1
+     1300: r[n] = r[n] << 2;       cost:  1
+     1299: r[n] = r[n] - r[1];     cost:  1
+    41568: r[n] = r[n] << 5;       cost:  1
+    42867: r[n] = r[n] + r[n-1];   cost:  1
+   685872: r[n] = r[n] << 4;       cost:  1
+   685871: r[n] = r[n] - r[1];     cost:  1
+  5486968: r[n] = r[n] << 3;       cost:  1
+  6172839: r[n] = r[n] + r[n-1];   cost:  1
+ 12345678: r[n] = r[n] << 1;       cost:  1
 ============================================================
 ```
-
-The above took under 0.5 seconds on my computer. A strictly binary method takes about 0.2 seconds but requires 17 instructions rather than 13 instructions: or 30% more.
 
 Notice that there were a 3 factors used to get produced sequence: 5 (to go from 65 to 325),
 33 (to go from 1299 to 42867) and 9 (to go from 685871 to 6172839).
 
 The above calculation begins to show the combinatorial nature of the problem.
 
+The above took under 0.9 seconds on my computer. A strictly binary method takes about 0.2 seconds but requires 17 instructions rather than 13 instructions: or 30% more instructions.
+
+Although the binary method is great for numbers under 100:
+
+![100-bin-vs-stdcost.svg](../graphs/100-bin-vs-stdcost.svg)
+
+When we get to larger number it tends to jump about wildly and on average more than double the number of instructions in the range from 1 to 5000.
+
+![Instruction-Sequence Costs for the first 5,000 Integers](./graphs/5000-bin-vs-stdcost.svg)cost.svg)
+
+
 Alpha-beta pruning
 -------------
 
 The way the sequence-finding part of `mult-by-const` works is that it uses [alpha-beta pruning](https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning).
 
-Fill in...
+This helps the program greatly. In an early version of the program, I reduced the time from 6.6 seconds to 0.9 seconds computing a multiplication by 1234578 just by tightening the alpha cutoffs.
+
+Fill in how alpha beta pruning works.
 
 Cache entries
 -------------
@@ -220,60 +223,49 @@ Fill in...
 
 ```console
 $ mult-by-const --showcache 341
-------------------------------------------------------------
 Instruction sequence for 341 = 101010101, cost:  6:
-op: shift(2),   	cost:  1,	value:   4
-op: add(1),     	cost:  1,	value:   5
-op: shift(1),   	cost:  1,	value:  10
-op: add(1),     	cost:  1,	value:  11
-op: shift(5),   	cost:  1,	value: 352
-op: subtract(n),	cost:  1,	value: 341
+        1: r[1] = <initial value>; cost:  0
+        4: r[n] = r[1] << 2;       cost:  1
+        3: r[n] = r[n] - r[1];     cost:  1
+       12: r[n] = r[n] << 2;       cost:  1
+       11: r[n] = r[n] - r[1];     cost:  1
+      352: r[n] = r[n] << 5;       cost:  1
+      341: r[n] = r[n] - r[n-1];   cost:  1
 ============================================================
-   0: cost:       1;	[constant 0]
-   1: cost:       0;	[noop]
-   2: cost:       1;	[<< 1]
-   3: cost: (0,   2];	[<< 1, +1]
-   4: cost:       1;	[<< 2]
-   5: cost: (0,   2];	[<< 2, +1]
-   6: cost: (1,inf ];	[]
-   8: cost: (0,inf ];	[]
-  10: cost:       3;	[<< 2, +1, << 1]
-  11: cost: (0,   4];	[<< 2, +1, << 1, +1]
-  12: cost:       3;	[<< 1, +1, << 2]
-  16: cost:       1;	[<< 4]
-  17: cost: (0,   2];	[<< 4, +1]
-  18: cost: (1,inf ];	[]
-  19: cost: (0,   4];	[<< 3, +1, << 1, +1]
-  20: cost: (1,inf ];	[]
-  21: cost: (0,   4];	[<< 2, +1, << 2, +1]
-  22: cost: (1,inf ];	[]
-  42: cost: (1,inf ];	[]
-  43: cost: (0,   6];	[<< 2, +1, << 2, +1, << 1, +1]
-  44: cost: (1,inf ];	[]
-  56: cost: (1,inf ];	[]
-  57: cost: (0,   4];	[<< 3, -1, << 3, +1]
-  58: cost: (1,inf ];	[]
-  84: cost: (3,   5];	[<< 2, +1, << 2, +1, << 2]
-  85: cost: (0,   6];	[<< 2, +1, << 2, +1, << 2, +1]
-  86: cost: (3,   7];	[<< 2, +1, << 2, +1, << 1, +1, << 1]
- 170: cost: (3,   7];	[<< 2, +1, << 2, +1, << 2, +1, << 1]
- 171: cost: (0,   8];	[<< 2, +1, << 2, +1, << 2, +1, << 1, +1]
- 172: cost: (3,   7];	[<< 2, +1, << 2, +1, << 1, +1, << 2]
- 340: cost: (5,   7];	[<< 2, +1, << 2, +1, << 2, +1, << 2]
- 341: cost:       6;	[<< 2, +1, << 1, +1, << 5, -(n)]
- 342: cost: (5,   9];	[<< 2, +1, << 2, +1, << 2, +1, << 1, +1, << 1]
+  -1: cost:       1;	[-n]
+   0: cost:       1;	[0]
+   1: cost:       0;	[nop]
+   3: cost:       2;	[n<<2, n-1]
+   4: cost: (0,   1];	[n<<2]
+   5: cost: (0,   2];	[n<<2, n+1]
+  11: cost: (0,   4];	[n<<2, n-1, n<<2, n-1]
+  12: cost: (0,   3];	[n<<2, n-1, n<<2]
+  15: cost: (0,inf ];	[]
+  16: cost:       1;	[n<<4]
+  19: cost: (5,inf ];	[]
+  20: cost: (0,   3];	[n<<2, n+1, n<<2]
+  21: cost: (0,   4];	[n<<2, n+1, n<<2, n+1]
+  29: cost: (0,inf ];	[]
+  30: cost: (5,inf ];	[]
+  43: cost: (0,inf ];	[]
+  44: cost:       5;	[n<<2, n-1, n<<2, n-1, n<<2]
+  57: cost: (3,inf ];	[]
+  58: cost: (4,inf ];	[]
+  84: cost: (0,   5];	[n<<2, n+1, n<<2, n+1, n<<2]
+  85: cost: (0,   6];	[n<<2, n+1, n<<2, n+1, n<<2, n+1]
+ 171: cost: (0,inf ];	[]
+ 172: cost: (2,inf ];	[]
+ 340: cost: (0,   7];	[n<<2, n+1, n<<2, n+1, n<<2, n+1, n<<2]
+ 341: cost:       6;	[n<<2, n-1, n<<2, n-1, n<<5, n-m]
+ 342: cost: (1,inf ];	[]
 
-
-Cache hits (finished):		   5
-Cache hits (unfinished):	  56
-Cache misses:			  31
+Cache hits (finished):		  58
+Cache hits (unfinished):	  85
+Cache misses:			  20
 ============================================================
 ```
 
-References
-==========
-* My _Software: Practice and Experience_ paper [Multiplication by integer constants](https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.4380160704) for details.
-* Section 8-4 of Henry Warren's: Hacker's Delight (ISBN-13: 978-0321842688) has some updates and revisions.
-* _The Art Computer Programming_, Vol 2, 2nd Edition; Section 4.6.3, page 441 of the 2nd Edition
-* Vincent Lefèvre's [Multiplication by Integer Constant site](http://www.vinc17.net/research/mulbyconst/index.en.html)
-* Yevgen Voronenko and Markus Püschel's [Spiral Multiplier Block Generator site](http://spiral.ece.cmu.edu/mcm/gen.html)
+Dumping Data
+------------
+
+Fill in...
