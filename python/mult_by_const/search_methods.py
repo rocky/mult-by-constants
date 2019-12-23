@@ -20,6 +20,9 @@ from mult_by_const.binary_method import binary_sequence_inner
 from mult_by_const.cpu import inf_cost
 from mult_by_const.instruction import (OP_R1, REVERSE_SUBTRACT_1, Instruction, instruction_sequence_cost)
 
+def signum(n):
+    return 1 if n > 0 else -1
+
 def search_add_one(
     self,
     n: int,
@@ -28,7 +31,7 @@ def search_add_one(
     instrs: List[Instruction],
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
-    return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs, OP_R1)
+    return self.try_plus_offset(n, +signum(n), upper, lower, instrs, candidate_instrs, OP_R1)
 
 def search_binary_method(
     self,
@@ -88,10 +91,10 @@ def search_add_or_subtract_one(
     if n > 0:
         upper, candidate_instrs = search_subtract_one(self, n, upper, lower, instrs, candidate_instrs)
         upper, candidate_instrs = search_add_one(self, n, upper, lower, instrs, candidate_instrs)
+    elif abs(n) == 1:
+        cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
     else:
-        # FIXME: move this to setup search code.
         upper, candidate_instrs = search_negate(self, n, upper, lower, instrs, candidate_instrs)
-
         upper, candidate_instrs = search_add_one(self, n, upper, lower, instrs, candidate_instrs)
         upper, candidate_instrs = search_subtract_one(self, n, upper, lower, instrs, candidate_instrs)
     return upper, candidate_instrs
@@ -158,6 +161,7 @@ def search_short_factors(
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
 
+    abs_n = abs(n)
     # The first factors, 3 = 2+1, and 5 = 4+1, are done special
     # and out of the "while" loop below, because we don't want to
     # consider subtraction factors 2-1 = 1, or 4-1 = 3.
@@ -165,7 +169,7 @@ def search_short_factors(
     # The latter, 3, is covered by 2+1 of the "for" loop below
 
     for factor, shift_amount in ((3, 1), (5, 2)):
-        if factor > n:
+        if factor > abs_n:
             break
         upper, candidate_instrs = self.try_shift_op_factor(
             n, factor, "add", shift_amount, upper, lower, instrs, candidate_instrs
@@ -173,7 +177,7 @@ def search_short_factors(
         pass
 
     i, j = 3, 8
-    while j - 1 <= n:
+    while j - 1 <= abs_n:
         upper, candidate_instrs = self.try_shift_op_factor(
             n, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
         )
@@ -197,4 +201,4 @@ def search_subtract_one(
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
 
-    return self.try_plus_offset(n, +1, upper, lower, instrs, candidate_instrs, OP_R1)
+    return self.try_plus_offset(n, +signum(n), upper, lower, instrs, candidate_instrs, OP_R1)

@@ -60,10 +60,10 @@ class MultConst(MultConstClass):
                 if self.debug:
                     self.debug_msg(f"Trying factor {factor}...")
                 try_cost, try_instrs = self.alpha_beta_search(m, lower=lower, upper=upper)
-                if lower + try_cost < upper:
+                if try_cost < upper - lower:
                     if self.debug:
                         self.debug_msg(
-                            f"Update {n} using factor {factor}; cost {lower + try_cost} < previous best {upper}"
+                            f"Update {n} using factor {factor}; cost {lower} < previous best {upper - try_cost}"
                         )
                     candidate_instrs = try_instrs + [
                         Instruction("shift", shift_amount, shift_cost)
