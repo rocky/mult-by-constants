@@ -4,7 +4,7 @@
  *
  * A library for finding multiplication sequences.
  *
- * Compile with -DNCALLS to get the number of get_node() and try() calls.
+ * Compile with -DNCALLS to get the number of alpha_beta_search() and try() calls.
  */
 
 #include <assert.h>
@@ -26,7 +26,7 @@ const char *OP2NAME[FSUB+1] =
    "INVALID", "NOOP", "add(1)", "subtract(1)", "add(n)", "subtract(n)"
   };
 
-NODE *get_node(VALUE n, COST limit);
+NODE *alpha_beta_search(VALUE n, COST lower, COST limit);
 void try(VALUE n, NODE *node, OP opcode,
     COST cost, unsigned int shift, COST *limit);
 
@@ -41,17 +41,17 @@ print_sequence(VALUE n, NODE *node, COST cost,
 
   if (verbosity > -1)
     {
-      print_cost(n, cost);
+      print_cost("\nInstruction sequence cost for ", n, cost);
       if (verbosity > 0) {
         unsigned int i = emit_code(node);
         if (initial_shift > 0) {
-          printf("%9lu: r%u = r%u << %lu\n", n, i, i-1, initial_shift);
+          printf("%9lu: r[n] = r[%s] << %lu\n", n, (i==1) ? "1" : "n", initial_shift);
         }
 
       }
 
 #ifdef NCALLS
-      printf("%lu calls to get_node()\n", ngn);
+      printf("%lu calls to alpha_beta_search()\n", ngn);
       printf("%lu calls to try()\n", ntry);
       printf("%lu calls to malloc()\n", nmalloc);
 #endif
@@ -94,7 +94,7 @@ void init_hash(void)
   }
 
 
-NODE *get_node(VALUE n, COST limit)
+NODE *alpha_beta_search(VALUE n, COST lower, COST limit)
 {
   unsigned int hash;
   NODE *node;
@@ -110,7 +110,7 @@ NODE *get_node(VALUE n, COST limit)
     for (int i=0; i < 2*call_nesting; i++) {
       putchar(' ');
     }
-    printf("get_node %" VALUEFMT " with max cost: %" COSTFMT "\n", n, limit);
+    printf("alpha_beta_search for %" VALUEFMT " incurred cost: %" COSTFMT ", max alotted cost: %" COSTFMT "\n", n, lower, limit);
   }
 
   hash = n % HASH_SIZE;
@@ -219,7 +219,7 @@ void try(VALUE n, NODE *node, OP opcode,
 
   if (cost > *limit)
     return;
-  tmp_node = get_node(n, *limit - cost);
+  tmp_node = alpha_beta_search(n, cost, *limit);
   if (tmp_node->opcode == INVALID)
     return;
 
@@ -332,7 +332,7 @@ COST spe_mult(VALUE n, NODE *node, unsigned int *initial_shift)
      cost so that searching will update with the binary method if no other method is available.
   */
   limit  = binary_mult_cost(n) + ADD_COST;
-  node = get_node(n, limit);
+  node = alpha_beta_search(n, 0, limit);
 
   COST cost = node->cost;
   if (*initial_shift > 0) {
@@ -354,7 +354,7 @@ unsigned int emit_code(NODE *node)
      and return a register number.
   */
   unsigned int register_number;
-  char regnum[] = "r1";
+  char regnum[] = "rn";
 
   if (node == NULL)
     return 0;
@@ -363,18 +363,18 @@ unsigned int emit_code(NODE *node)
 
   if (node->opcode == NOOP)
     {
-      printf("%9lu: r0 = <initial value>", node->value);
+      printf("%9lu: r[1] = <initial value>", node->value);
     }
   else
     {
-      printf("%9lu: r1 = ", node->value);
+      printf("%9lu: r[n] = ", node->value);
       if (node->shift) {
-        printf("r1 << %u", node->shift);
+        printf("r[n] << %u", node->shift);
       }
       if (node->opcode == ADD1 || node->opcode == SUB1)
-        printf(" %c r0", opsign[node->opcode]);
+        printf(" %c r[1]", opsign[node->opcode]);
       else if (node->opcode == FADD || node->opcode == FSUB)
-        printf(" %c r1", opsign[node->opcode]);
+        printf(" %c r[n-1]", opsign[node->opcode]);
       else {
         printf("Uknown opcode\n");
       }

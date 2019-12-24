@@ -141,7 +141,7 @@ extern COST binary_mult_cost (VALUE n);
 
 
 extern COST spe_mult(VALUE n, /*out*/ NODE *node, /*out*/ unsigned int *initial_shift);
-extern void print_cost(VALUE n, COST cost);
+extern void print_cost(const char *prefix, VALUE n, COST cost);
 extern char *format_binary_value(VALUE n);
 
 extern void

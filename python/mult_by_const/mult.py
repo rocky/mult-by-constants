@@ -59,7 +59,7 @@ class MultConst(MultConstClass):
                 m = n // factor
                 if self.debug:
                     self.debug_msg(f"Trying factor {factor}...")
-                try_cost, try_instrs = self.alpha_beta_search(m, lower=lower, upper=upper)
+                try_cost, try_instrs = self.alpha_beta_search(m, lower=lower, limit=upper)
                 if try_cost < upper - lower:
                     if self.debug:
                         self.debug_msg(
@@ -97,10 +97,11 @@ class MultConst(MultConstClass):
         if try_lower < upper:
             n_inc = n + increment
             if self.debug:
-                self.debug_msg(f"Trying neighbor {n_inc} of {n}...")
+                which = "lower" if abs(n_inc) < abs(n) else "upper"
+                self.debug_msg(f"Trying {which} neighbor {n_inc} of {n}...")
                 pass
 
-            neighbor_cost, neighbor_instrs = self.alpha_beta_search(n_inc, try_lower, upper)
+            neighbor_cost, neighbor_instrs = self.alpha_beta_search(n_inc, try_lower, limit=upper)
 
             try_cost = neighbor_cost + try_lower
             if try_cost < upper:
@@ -154,7 +155,7 @@ class MultConst(MultConstClass):
             cache_upper, bin_instrs = binary_sequence(self, n)
             self.mult_cache.insert_or_update(n, 0, cache_upper, False, bin_instrs)
 
-        cost, instrs = self.alpha_beta_search(n, 0, cache_upper)
+        cost, instrs = self.alpha_beta_search(n, 0, limit=cache_upper)
         self.mult_cache.update_field(n, finished=True)
         return cost, instrs
 
@@ -190,7 +191,7 @@ class MultConst(MultConstClass):
         return upper
 
     def alpha_beta_search(
-        self, n: int, lower: float, upper: float
+        self, n: int, lower: float, limit: float
     ) -> Tuple[float, List[Instruction]]:
         """Alpha-beta search
 
@@ -201,10 +202,10 @@ class MultConst(MultConstClass):
         lower: is the cost used up until this point
                for the top-level searched multiplier. This number has
                to be added onto the cost for *n* when compared against
-               the *upper* in order for multiplication via
+               the *limit* in order for multiplication via
                *n* to be considered a better sequence.
 
-        upper: is the cost of the best sequence of instructions we've
+        limit: is the cost of the best sequence of instructions we've
                seen so far, and that is recorded in "results".  We get
                this value initially using the binary method, but it
                can be lowered as we find better sequences.
@@ -216,29 +217,29 @@ class MultConst(MultConstClass):
 
         if self.debug:
             self.debug_msg(
-                f"alpha-beta search for {n}; incurred cost: {lower}, max alotted cost: {upper}",
+                f"alpha-beta search for {n}; incurred cost: {lower}, max alotted cost: {limit}",
                 2,
             )
 
-        if lower > upper:
+        if lower > limit:
             if self.debug:
                 self.debug_msg(
-                    f"**alpha cutoff for {n} incurred {lower} > {upper} alotted", -2
+                    f"**alpha cutoff for {n} incurred {lower} > {limit} alotted", -2
                 )
             return inf_cost, []
 
-        # assert lower <= upper
+        # assert lower <= limit
 
         orig_n = n
         n, need_negation = self.need_negation(n)
 
         assert n > 0
 
-        cache_lower, cache_upper, finished, candidate_instrs = self.mult_cache[n]
+        cache_lower, cache_limit, finished, candidate_instrs = self.mult_cache[n]
 
-        if cache_upper < upper:
+        if cache_limit < limit:
             # Better candidate is in sequence
-            upper = cache_upper
+            limit = cache_limit
         # elif cache_lower < lower:
         #     # No sequence found, but we may have used more instructions in the
         #     # process; so update lower to reflect that fact that we'll neede
@@ -253,18 +254,18 @@ class MultConst(MultConstClass):
             m = -m
 
         for fn in self.search_methods:
-            upper, candidate_instrs = fn(
-                self, m, upper, lower, instrs, candidate_instrs
+            limit, candidate_instrs = fn(
+                self, m, limit, lower, instrs, candidate_instrs
             )
 
-        upper = self.check_for_cutoff(
-            orig_n, lower=lower, upper=upper, candidate_instrs=candidate_instrs
+        limit = self.check_for_cutoff(
+            orig_n, lower=lower, upper=limit, candidate_instrs=candidate_instrs
         )
 
         if self.debug:
             self.dedent()
 
-        return upper, candidate_instrs
+        return limit, candidate_instrs
 
     pass
 

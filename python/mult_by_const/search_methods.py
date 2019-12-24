@@ -205,4 +205,4 @@ def search_subtract_one(
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
 
-    return self.try_plus_offset(n, +signum(n), upper, lower, instrs, candidate_instrs, OP_R1)
+    return self.try_plus_offset(n, -signum(n), upper, lower, instrs, candidate_instrs, OP_R1)
