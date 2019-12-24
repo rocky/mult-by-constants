@@ -94,6 +94,10 @@ def search_add_or_subtract_one(
     elif abs(n) == 1:
         cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
     else:
+        # We search on  "negate" first since that will succeed and give a close bound (within an instruction
+        # of the optimal) to speed searching. The searches below this when they work will be better.
+        # but we just don't know if they will succeed at all. Overall in alpha-beta searching it is useful
+        # to start out with something that will always work so that we can set a reasonable bound on searching.
         upper, candidate_instrs = search_negate(self, n, upper, lower, instrs, candidate_instrs)
         upper, candidate_instrs = search_add_one(self, n, upper, lower, instrs, candidate_instrs)
         upper, candidate_instrs = search_subtract_one(self, n, upper, lower, instrs, candidate_instrs)

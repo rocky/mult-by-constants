@@ -184,7 +184,7 @@ class MultConst(MultConstClass):
             # how many instructions we needed to use to get nowhere.
             if self.debug:
                 self.debug_msg(
-                    f"cutoffs before anything found for {n}; check/update instructions used {lower}"
+                    f"**cutoffs before anything found for {n}; check/update instructions used {lower}"
                 )
             self.mult_cache.update_field(n, lower=lower)
         return upper

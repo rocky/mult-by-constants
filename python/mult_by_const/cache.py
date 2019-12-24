@@ -179,6 +179,9 @@ class MultCache:
         if upper is not None and upper < cache_upper:
             assert instrs is not None
             cache_upper = upper
+            if upper < cache_lower:
+                print(f"WOOT upper: {upper} < cache_lower {cache_lower}")
+                cache_lower = upper
             worse = False
         if finished is not None and not cache_finished:
             cache_finished = finished

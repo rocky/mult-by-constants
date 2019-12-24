@@ -53,6 +53,8 @@ class Instruction:
             operand1 = "n"
             if self.amount == FACTOR_FLAG:
                 operand2 = "m"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                return f"1-{operand1}"
             elif self.amount == 1:
                 operand2 = "1"
                 pass
