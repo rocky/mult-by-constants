@@ -2,16 +2,16 @@
 Test higher-level caching of multiplication searching.
 """
 from mult_by_const import MultConst
-import os
+# from mult_by_const.io import dump
 
 
 def test_mult_cache():
-    debug = "DEBUG" in os.environ
-    mconst = MultConst(debug=debug)
+    mconst = MultConst(debug=True)
 
     for clear_cache in (False, True):
         for n in range(2, 52):
             cost, instrs = mconst.find_mult_sequence(n)
+            # dump(mconst.mult_cache)
             mconst.mult_cache.check()
             if clear_cache:
                 mconst.mult_cache.clear()

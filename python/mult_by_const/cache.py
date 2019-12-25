@@ -1,6 +1,5 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """A multiplication-sequence cache module"""
-from copy import deepcopy
 from typing import List, Tuple, Dict, Any
 
 from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
@@ -102,8 +101,7 @@ class MultCache:
         finished: bool,
         instrs: List[Instruction],
     ) -> None:
-        # print("XXX", (lower, upper, finished, instrs))
-        self.cache[n] = (lower, upper, finished, instrs)
+        self.cache[n] = (lower, upper, finished, instrs[:])
 
     def insert_or_update(
         self,
@@ -148,7 +146,7 @@ class MultCache:
                 # case where there not *complete* information?
                 self.hits_partial += 1
         self.cache[n] = (cache_lower, cache_upper, finished, cache_instrs)
-        return cache_lower, cache_upper, finished, deepcopy(cache_instrs)
+        return cache_lower, cache_upper, finished, cache_instrs[:]
 
     def update_field(
         self,
@@ -180,13 +178,12 @@ class MultCache:
             assert instrs is not None
             cache_upper = upper
             if upper < cache_lower:
-                print(f"WOOT upper: {upper} < cache_lower {cache_lower}")
                 cache_lower = upper
             worse = False
         if finished is not None and not cache_finished:
             cache_finished = finished
         if instrs is not None and not worse:
-            cache_instrs = instrs
+            cache_instrs = instrs[:]
         if finished is None and not worse:
             cache_finished = True
             cache_lower = cache_upper

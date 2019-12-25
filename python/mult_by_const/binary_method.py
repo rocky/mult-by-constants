@@ -129,10 +129,9 @@ def binary_sequence_inner(self: MultConstClass, n: int) -> Tuple[float, List[Ins
     if need_negation:
         cost += self.add_instruction(bin_instrs, "negate", OP_R1)
 
-    if self.debug:
-        self.debug_msg(
-            f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}"
-        )
+    self.debug_msg(
+        f"binary method for {orig_n} = {bin2str(orig_n)} has cost {cost}"
+    )
     self.mult_cache.update_sequence_partials(bin_instrs)
     return (cost, bin_instrs)
 

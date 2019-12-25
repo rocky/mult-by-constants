@@ -46,13 +46,11 @@ class MultConstClass:
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
         self.mult_cache = MultCache(cpu_model)
-
-        if debug:
-            # We use indent show nesting in debug output
-            self.indent = 0
         self.debug = debug
         self.search_methods = search_methods
 
+        # We use indent show nesting in debug output
+        self.indent = 0
         return
 
     def dedent(self) -> None:
@@ -60,9 +58,10 @@ class MultConstClass:
             self.indent -= 2
 
     def debug_msg(self, s: str, relative_indent=0) -> None:
-        print(f"{' '*self.indent}{s}")
-        if relative_indent:
-            self.indent += relative_indent
+        if self.debug:
+            print(f"{' '*self.indent}{s}")
+            if relative_indent:
+                self.indent += relative_indent
 
     def make_odd(
         self, n: int, cost: float, result: List[Instruction]

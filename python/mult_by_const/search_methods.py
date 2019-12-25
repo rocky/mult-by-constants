@@ -18,22 +18,30 @@ All searching methods start with "search" have the same interface:
 from typing import List, Tuple
 from mult_by_const.binary_method import binary_sequence_inner
 from mult_by_const.cpu import inf_cost
-from mult_by_const.instruction import (OP_R1, REVERSE_SUBTRACT_1, Instruction, instruction_sequence_cost)
+from mult_by_const.instruction import (
+    OP_R1,
+    REVERSE_SUBTRACT_1,
+    Instruction,
+    instruction_sequence_cost,
+)
+from mult_by_const.util import signum
 
-def signum(n):
-    return 1 if n > 0 else -1
 
 def search_add_one(
     self,
     n: int,
-    upper: float,
-    lower: float,
-    instrs: List[Instruction],
-    candidate_instrs: List[Instruction],
+    upper: float,  # maximum allowed cost for an instruction sequence.
+    lower: float,  # cost of instructions seen so far, or inf_cost
+    instrs: List[Instruction],  # We build on this
+    candidate_instrs: List[
+        Instruction
+    ],  # If not empty, the best instruction sequence seen so for with cost "limit".
 ) -> Tuple[float, List[Instruction]]:
-    return self.try_plus_offset(n, +signum(n), upper, lower, instrs, candidate_instrs, OP_R1)
+    inc = signum(n) * -1
+    return self.try_plus_offset(n, inc, upper, lower, instrs, candidate_instrs, OP_R1)
 
-def search_binary_method(
+
+def search_binary_method_with_cache(
     self,
     n: int,
     upper: float,
@@ -41,12 +49,17 @@ def search_binary_method(
     instrs: List[Instruction],
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
-    # FIXME: DRY with search_cache. The only difference is the next line.
+
+    cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
+    if finished:
+        return cache_upper, cache_instrs
+
     cache_upper, cache_instrs = binary_sequence_inner(self, n)
     try_cost = cache_upper + instruction_sequence_cost(instrs)
     if try_cost < upper:
-        if self.debug:
-            self.debug_msg(f"Include cache value {n} in sequence; cost {try_cost} < {upper}.")
+        self.debug_msg(
+            f"Include cache value {n} in sequence; cost {try_cost} < {upper}."
+        )
         if n == 1:
             candidate_instrs = instrs
         else:
@@ -54,28 +67,27 @@ def search_binary_method(
         upper = try_cost
     return upper, candidate_instrs
 
+
 def search_cache(
     self,
     n: int,
-    upper: float,
+    limit: float,
     lower: float,
     instrs: List[Instruction],
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
     """Is what we want already in the cache?"""
 
-    # FIXME: DRY with search_binary_method. The only difference is the next line.
     cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
-    try_cost = cache_upper + instruction_sequence_cost(instrs)
-    if try_cost < upper:
-        if self.debug:
-            self.debug_msg(f"Include cache value {n} in sequence; cost {try_cost} < {upper}.")
-        if n == 1:
-            candidate_instrs = instrs
-        else:
-            candidate_instrs = cache_instrs + instrs
-        upper = try_cost
-    return upper, candidate_instrs
+    try_limit = cache_upper + instruction_sequence_cost(instrs)
+    if try_limit < limit:
+        self.debug_msg(
+            f"*include cache value {n} in sequence; search limit {try_limit} < {limit}."
+        )
+        candidate_instrs = cache_instrs
+        limit = cache_upper
+    return limit, candidate_instrs
+
 
 def search_add_or_subtract_one(
     self,
@@ -88,19 +100,29 @@ def search_add_or_subtract_one(
 
     # To improve searching and make use of the cache better search towards zero before
     # searching away from zero.
-    if n > 0:
-        upper, candidate_instrs = search_subtract_one(self, n, upper, lower, instrs, candidate_instrs)
-        upper, candidate_instrs = search_add_one(self, n, upper, lower, instrs, candidate_instrs)
-    elif abs(n) == 1:
+    if abs(n) == 1:
         cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
+    elif n > 0:
+        upper, candidate_instrs = search_subtract_one(
+            self, n, upper, lower, instrs, candidate_instrs
+        )
+        upper, candidate_instrs = search_add_one(
+            self, n, upper, lower, instrs, candidate_instrs
+        )
     else:
         # We search on  "negate" first since that will succeed and give a close bound (within an instruction
         # of the optimal) to speed searching. The searches below this when they work will be better.
         # but we just don't know if they will succeed at all. Overall in alpha-beta searching it is useful
         # to start out with something that will always work so that we can set a reasonable bound on searching.
-        upper, candidate_instrs = search_negate(self, n, upper, lower, instrs, candidate_instrs)
-        upper, candidate_instrs = search_add_one(self, n, upper, lower, instrs, candidate_instrs)
-        upper, candidate_instrs = search_subtract_one(self, n, upper, lower, instrs, candidate_instrs)
+        upper, candidate_instrs = search_negate(
+            self, n, upper, lower, instrs, candidate_instrs
+        )
+        upper, candidate_instrs = search_add_one(
+            self, n, upper, lower, instrs, candidate_instrs
+        )
+        upper, candidate_instrs = search_subtract_one(
+            self, n, upper, lower, instrs, candidate_instrs
+        )
     return upper, candidate_instrs
 
 
@@ -139,6 +161,7 @@ def search_negate(
             return cache_upper, instrs
     return upper, candidate_instrs
 
+
 def search_negate_subtract_one(
     self,
     n: int,
@@ -148,13 +171,18 @@ def search_negate_subtract_one(
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
 
+    cache_lower, cache_upper, finished, cache_instrs = self.mult_cache[n]
+    if finished:
+        return cache_upper, cache_instrs if n != 1 else []
     if n > 1:
         # Negative numbers never take less then their positive counterpart,
         # so there is no benefit in reversing a subtraction here.
         return upper, candidate_instrs
+
     return self.try_plus_offset(
         -n, -1, upper, lower, instrs, candidate_instrs, REVERSE_SUBTRACT_1
     )
+
 
 def search_short_factors(
     self,
@@ -196,13 +224,15 @@ def search_short_factors(
         pass
     return upper, candidate_instrs
 
+
+# FIXME add cache lookup as a decorator
 def search_subtract_one(
     self,
     n: int,
-    upper: float,
-    lower: float,
-    instrs: List[Instruction],
+    upper: float,  # maximum allowed cost for an instruction sequence.
+    lower: float,  # cost of instructions seen so far, or inf_cost
+    instrs: List[Instruction],  # We build on this
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
-
-    return self.try_plus_offset(n, -signum(n), upper, lower, instrs, candidate_instrs, OP_R1)
+    inc = signum(n) * 1
+    return self.try_plus_offset(n, inc, upper, lower, instrs, candidate_instrs, OP_R1)

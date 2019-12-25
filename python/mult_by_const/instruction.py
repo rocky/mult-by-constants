@@ -222,12 +222,15 @@ def print_instructions(
         pass
 
     print_sep()
-    assert (
-        n is None or n == value
-    ), f"Multiplier should be {n}, not computed value {value}"
-    assert (
-        stored_cost is None or stored_cost == cost
-    ), f"Stored cost for {n} is {stored_cost}, but computed value is {cost}"
+    if instrs:
+        assert (
+            n is None or n == value
+        ), f"Multiplier should be {n}, not computed value {value}."
+        assert (
+            stored_cost is None or stored_cost == cost
+        ), f"Stored cost for {n} is {stored_cost}, but computed value is {cost}."
+    else:
+        assert n == 1, f"When no instructions, multiplier should be 1; got {n}."
     return
 
 

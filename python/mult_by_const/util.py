@@ -5,6 +5,10 @@ import sys
 from typing import List, Tuple, Dict
 
 
+def signum(n):
+    return 1 if n > 0 else -1
+
+
 def consecutive_zeros(n: int) -> Tuple[int, int]:
     shift_amount = 0
     while n % 2 == 0:
