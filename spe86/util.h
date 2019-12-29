@@ -4,7 +4,7 @@
 #include "spe_mult.h"
 extern int errexit(const char* msg, int exit_code);
 extern char *format_binary_value(VALUE n);
-extern void print_cost(VALUE n, COST cost);
+extern void print_cost(const char *prefix, VALUE n, COST cost);
 
 #endif /* SPE_MULT_UTIL_H */
 

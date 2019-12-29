@@ -7,10 +7,7 @@ from mult_by_const.cpu import DEFAULT_CPU_PROFILE
 
 from mult_by_const.instruction import Instruction
 
-from mult_by_const.util import (
-    consecutive_zeros,
-    default_shift_cost,
-)
+from mult_by_const.util import consecutive_zeros, default_shift_cost
 
 from mult_by_const.cache import MultCache
 
@@ -49,13 +46,11 @@ class MultConstClass:
         # FIXME: give an examples here. Also attach names "alpha" and
         # and "beta" with the different types of cutoffs.
         self.mult_cache = MultCache(cpu_model)
-
-        if debug:
-            # We use indent show nesting in debug output
-            self.indent = 0
         self.debug = debug
         self.search_methods = search_methods
 
+        # We use indent show nesting in debug output
+        self.indent = 0
         return
 
     def dedent(self) -> None:
@@ -63,13 +58,14 @@ class MultConstClass:
             self.indent -= 2
 
     def debug_msg(self, s: str, relative_indent=0) -> None:
-        print(f"{' '*self.indent}{s}")
-        if relative_indent:
-            self.indent += relative_indent
+        if self.debug:
+            print(f"{' '*self.indent}{s}")
+            if relative_indent:
+                self.indent += relative_indent
 
     def make_odd(
         self, n: int, cost: float, result: List[Instruction]
-    ) -> Tuple[int, float]:
+    ) -> Tuple[int, float, int]:
         """Handle low-order 0's with a single shift.
            Note: those machines that can only do a single shift of one place
            or those machines whose time varies with the shift amount, that is covered
@@ -81,7 +77,14 @@ class MultConstClass:
             cost += shift_cost
             result.append(Instruction("shift", shift_amount, shift_cost))
             pass
-        return (n, cost)
+        return (n, cost, shift_amount)
+
+    def add_instruction(
+        self, bin_instrs: List[Instruction], op_name: str, op_flag: int
+    ) -> float:
+        cost = self.op_costs[op_name]
+        bin_instrs.append(Instruction(op_name, op_flag, cost))
+        return cost
 
     def need_negation(self, n: int) -> Tuple[int, bool]:
         """
@@ -99,6 +102,7 @@ class MultConstClass:
         else:
             need_negation = False
         return n, need_negation
+
 
 if __name__ == "__main__":
     mconst = MultConstClass()

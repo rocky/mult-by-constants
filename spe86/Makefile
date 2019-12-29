@@ -3,7 +3,7 @@
 
 all: mult-spe86 check
 
-# Add COPTS -DNCALLS to get the number of get_node() and try() calls.
+# Add COPTS -DNCALLS to get the number of alpha_beta_search_node() and try() calls.
 
 COPTS ?= -ggdb
 

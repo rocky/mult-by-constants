@@ -53,6 +53,8 @@ class Instruction:
             operand1 = "n"
             if self.amount == FACTOR_FLAG:
                 operand2 = "m"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                return f"1-{operand1}"
             elif self.amount == 1:
                 operand2 = "1"
                 pass
@@ -82,6 +84,8 @@ class Instruction:
         if self.op == "add":
             if self.amount == OP_R1:
                 instr_str += f"{op1} + {r1}"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                instr_str += f"{r1} - {op1}"
             elif self.amount == FACTOR_FLAG:
                 instr_str += f"{op1} + {op2}"
             else:
@@ -116,6 +120,8 @@ class Instruction:
         if self.op == "add":
             if self.amount == FACTOR_FLAG:
                 op_str += " n, m"
+            elif self.amount == REVERSE_SUBTRACT_1:
+                op_str += " 1, n"
             elif self.amount == 1:
                 op_str += " n, 1"
             else:
@@ -185,6 +191,8 @@ def print_instructions(
         elif instr.op == "add":
             if instr.amount == OP_R1:
                 value += 1
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                value = -(value + 1)
             elif instr.amount == FACTOR_FLAG:
                 value += previous_value
             else:
@@ -214,12 +222,15 @@ def print_instructions(
         pass
 
     print_sep()
-    assert (
-        n is None or n == value
-    ), f"Multiplier should be {n}, not computed value {value}"
-    assert (
-        stored_cost is None or stored_cost == cost
-    ), f"Stored cost for {n} is {stored_cost}, but computed value is {cost}"
+    if instrs:
+        assert (
+            n is None or n == value
+        ), f"Multiplier should be {n}, not computed value {value}."
+        assert (
+            stored_cost is None or stored_cost == cost
+        ), f"Stored cost for {n} is {stored_cost}, but computed value is {cost}."
+    else:
+        assert n == 1, f"When no instructions, multiplier should be 1; got {n}."
     return
 
 
@@ -251,36 +262,54 @@ def instruction_sequence_cost(instrs: List[Instruction]) -> float:
         pass
     return cost
 
-
 def instruction_sequence_value(instrs: List[Instruction]) -> int:
     """Return the cost associated with instruction sequence `instrs`.
     """
-    i, j = 1, 1
+    n, m = 1, 1
     for instr in instrs:
         if instr.op == "shift":
-            j = i
-            i <<= instr.amount
+            m = n
+            n <<= instr.amount
         elif instr.op == "add":
-            if instr.amount == 1:
-                i += 1
+            if instr.amount == OP_R1:
+                n += 1
+            elif instr.amount == FACTOR_FLAG:
+                n += m
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                n = -(n - 1)
             else:
-                i += j
+                print(f"Invalid flag on add in {instr}")
+                pass
+            pass
         elif instr.op == "subtract":
-            if instr.amount == 1:
-                i -= 1
+            if instr.amount == OP_R1:
+                n -= 1
+            elif instr.amount == REVERSE_SUBTRACT_1:
+                n = 1 - n
+            elif instr.amount == FACTOR_FLAG:
+                n -= m
+            elif instr.amount == REVERSE_SUBTRACT_FACTOR:
+                n = m - n
             else:
-                i -= j
+                print(f"Invalid flag on subtract in {instr}")
         elif instr.op == "zero":
             return 0
         elif instr.op == "negate":
-            i = -i
+            n = -n
         elif instr.op == "nop":
             pass
         else:
             print(f"unknown op {instr.op}")
         pass
 
-    return i
+    return n
+
+def find_negatable(instrs: List[Instruction]) -> int:
+    for (i, inst) in enumerate(instrs):
+        if inst.op in ("negate", "subtract"):
+            return i
+        pass
+    return -1
 
 
 # The next to functions assist in loading and dumping data.
@@ -328,6 +357,7 @@ if __name__ == "__main__":
         Instruction("subtract", FACTOR_FLAG),
         Instruction("negate", 0),
     ]
+    print(find_negatable(instrs))
     print(instrs)
     instrs2 = str2instructions("[n<<4, n+1, n<<2, n-m, -n]")
     print(instrs2)

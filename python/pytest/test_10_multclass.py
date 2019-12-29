@@ -9,9 +9,9 @@ def test_basic():
     mconst = MultConstClass()
     result: List[Instruction] = []
     for number, expect in (
-            (5, (5, 1)),
-            (10, (5, 2)),
-            (20, (5, 2))
+            (5, (5, 1, 0)),
+            (10, (5, 2, 1)),
+            (20, (5, 2, 2))
             ):
         got = mconst.make_odd(number, 1, result)
         assert got == expect, f"make_odd({number})={got}; expect {expect}"
