@@ -55,6 +55,8 @@ class Instruction:
                 operand2 = "m"
             elif self.amount == REVERSE_SUBTRACT_1:
                 return f"1-{operand1}"
+            elif self.amount == REVERSE_SUBTRACT_FACTOR:
+                return f"m-{operand1}"
             elif self.amount == 1:
                 operand2 = "1"
                 pass
@@ -67,6 +69,9 @@ class Instruction:
                 operand2 = "m"
             elif self.amount == REVERSE_SUBTRACT_1:
                 operand1 = "1"
+                operand2 = "n"
+            elif self.amount == REVERSE_SUBTRACT_FACTOR:
+                operand1 = "m"
                 operand2 = "n"
             elif self.amount == 1:
                 operand1 = "n"

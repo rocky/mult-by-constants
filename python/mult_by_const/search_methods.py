@@ -20,6 +20,8 @@ from mult_by_const.binary_method import binary_sequence_inner
 from mult_by_const.cpu import inf_cost
 from mult_by_const.instruction import (
     OP_R1,
+    FACTOR_FLAG,
+    REVERSE_SUBTRACT_FACTOR,
     REVERSE_SUBTRACT_1,
     Instruction,
     instruction_sequence_cost,
@@ -210,6 +212,22 @@ def search_short_factors(
 
     i, j = 3, 8
     while j - 1 <= abs_n:
+        if n < 0:
+            try_cost, try_instrs = self.try_shift_op_factor(
+                -n, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
+            )
+            if try_cost < upper and try_instrs and try_instrs[-1].op == "subtract":
+                self.debug_msg(
+                    f"*update {n} using factor {factor}; cost {try_cost} < previous limit {upper}"
+                )
+                self.mult_cache.update_field(
+                        n, upper=try_cost, instrs=try_instrs
+                    )
+                assert try_instrs[-1].amount == FACTOR_FLAG
+                try_instrs[-1].amount = REVERSE_SUBTRACT_FACTOR
+                candidate_instrs = try_instrs
+                upper = try_cost
+
         upper, candidate_instrs = self.try_shift_op_factor(
             n, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
         )
@@ -222,6 +240,7 @@ def search_short_factors(
         i += 1
         j <<= 1
         pass
+
     return upper, candidate_instrs
 
 
