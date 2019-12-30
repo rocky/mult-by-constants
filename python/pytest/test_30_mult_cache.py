@@ -19,6 +19,12 @@ def test_mult_cache():
             pass
         if not clear_cache:
             assert mconst.mult_cache[51][1] == 4, f"for {51} expected cost 4; got {cost}"
+            for n in range(-2, -52, -1):
+                ncost, instrs = mconst.find_mult_sequence(n)
+                cost = mconst.mult_cache[-n][1]
+                assert 0 <= ncost - cost <= 1, f"{ncost} - {cost} not in [0, 1]"
+                mconst.mult_cache.check()
+                pass
         pass
     return
 

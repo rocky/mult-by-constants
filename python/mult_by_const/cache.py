@@ -59,12 +59,14 @@ class MultCache:
         for num in sorted(self.cache.keys()):
             lower, upper, finished, instrs = self.cache[num]
             if finished:
-                check_instruction_sequence_cost(upper, instrs)
+                check_instruction_sequence_cost(upper, instrs, n=num)
                 check_instruction_sequence_value(num, instrs)
                 pass
 
             if instrs:
-                assert lower <= instruction_sequence_cost(instrs) <= upper
+                assert (
+                    lower <= instruction_sequence_cost(instrs) <= upper
+                ), f"{lower} <= {instruction_sequence_cost(instrs)} <= {upper} for {instrs}"
         return
 
     def clear(self) -> None:

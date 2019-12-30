@@ -118,7 +118,7 @@ class MultConst(MultConstClass):
                 )
                 limit = try_cost
                 neighbor_instrs.append(Instruction(op_str, op_flag, op_cost))
-                lower = self.mult_cache[n][0]
+                lower = min(self.mult_cache[n][0], try_cost)
                 self.mult_cache.insert_or_update(
                     n, lower, try_cost, False, neighbor_instrs
                 )
@@ -261,7 +261,8 @@ class MultConst(MultConstClass):
         if candidate_instrs:
             if shift_amount:
                 candidate_instrs.append(Instruction("shift", shift_amount, shift_cost))
-            self.mult_cache.insert_or_update(n, limit, limit, True, candidate_instrs)
+            limit = instruction_sequence_cost(candidate_instrs)
+            self.mult_cache.insert_or_update(orig_n, limit, limit, True, candidate_instrs)
         else:
             candidate_instrs = cache_instrs
 
@@ -269,7 +270,7 @@ class MultConst(MultConstClass):
             self.debug_msg(
                 f"**cutoffs before anything found for {orig_n}; check/update instructions used to {limit - lower}"
             )
-            self.mult_cache.update_field(n, lower=limit - lower)
+            self.mult_cache.update_field(orig_n, lower=limit - lower)
 
         self.dedent()
 

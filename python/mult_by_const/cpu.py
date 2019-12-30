@@ -20,35 +20,38 @@ INSTRUCTION_TYPES: FrozenSet[str] = frozenset(("two-address", "three-address"))
 # "nop" is kind of a placeholder for the initial register being an initial value, and that is
 # why it is (and must be) 0.
 #
-RISC_equal_time_cost_profile: Dict[str, int] = {
+RISC_equal_time_cost_profile: Dict[str, float] = {
     "add": 1,
-    "zero": 1,
     "copy": 1,
+    "eps": 0.1,
     "negate": 1,
     "nop": 0,
     "shift": 1,
     "subtract": 1,
+    "zero": 1,
     # "shift_add" = 1  # old RISC machines have this
 }
 
 # "add" and "copy" only
-add_only_cost_profile: Dict[str, int] = {
+add_only_cost_profile: Dict[str, float] = {
     "add": 1,
-    "zero": inf_cost,  # Can't do in this model
     "copy": 1,
+    "eps": 0.1,
     "nop": 0,
+    "zero": inf_cost,  # Can't do in this model
 }
 
 # "add", "subtraction", "copy" only.
-add_subtract_cost_profile: Dict[str, int] = {
+add_subtract_cost_profile: Dict[str, float] = {
     "add": 1,
-    "zero": 1,  # via subtract
-    "subtract": 1,
     "copy": 1,
+    "eps": 0.1,
     "nop": 0,
+    "subtract": 1,
+    "zero": 1,  # via subtract
 }
 
-OP_COST_PROFILES: Dict[str, Dict[str, int]] = {
+OP_COST_PROFILES: Dict[str, Dict[str, float]] = {
     "RISC Equal Time": RISC_equal_time_cost_profile,
     "add only": add_only_cost_profile,
     "add_subtract": add_subtract_cost_profile,
@@ -69,14 +72,15 @@ class CPUProfile:
         name: str,
         instruction_type: str,
         max_registers: int,
-        costs: Dict[str, int],
+        costs: Dict[str, float],
     ):
         self.name = name
         self.instruction_type = instruction_type
         self.max_registers = max_registers
         self.costs = costs
-        for field in ("add", "zero", "copy", "nop"):
+        for field in ("add", "eps", "zero", "copy", "nop"):
             assert field in costs, f'A cost model needs to include  operation "{field}"'
+        self.eps = self.costs["eps"]
 
     def subtract_can_negate(self) -> bool:
         return "subtract" in self.costs and self.max_registers > 2
