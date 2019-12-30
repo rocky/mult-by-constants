@@ -194,7 +194,7 @@ Notice that there were a 3 factors used to get produced sequence: 5 (to go from 
 
 The above calculation begins to show the combinatorial nature of the problem.
 
-The above took under 0.9 seconds on my computer. A strictly binary method takes about 0.2 seconds but requires 17 instructions rather than 13 instructions: or 30% more instructions.
+The above took under 0.26 seconds on my computer. A strictly binary method takes about 0.2 seconds but requires 17 instructions rather than 13 instructions: or 30% more instructions.
 
 Although the binary method is great for numbers under 100:
 
