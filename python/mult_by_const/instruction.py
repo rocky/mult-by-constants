@@ -249,11 +249,13 @@ def check_instruction_sequence_value(n: int, instrs: List[Instruction]) -> None:
     return
 
 
-def check_instruction_sequence_cost(cost: float, instrs: List[Instruction]) -> None:
+def check_instruction_sequence_cost(cost: float, instrs: List[Instruction], n=None) -> None:
     """Check that the instruction cost in `instrs`, is equal to passed-in expected cost `cost`.
     """
     actual_cost = instruction_sequence_cost(instrs)
-    assert cost == actual_cost, f"{instrs} cost is {actual_cost}; expecting {cost}"
+    prefix = f"{instrs} cost"
+    prefix += f" for {n}" if n is not None else ""
+    assert cost == actual_cost, f"{prefix} is {actual_cost}; expecting {cost}"
     return
 
 

@@ -14,8 +14,14 @@ def test_factor():
             (342, 7),
             (343, 6),
             (12345678, 13),
-            # (-12345678, 13),
+            (-12345678, 13),
         ):
+            # FIXME: The cache is messed up in a weird way, using a negative number
+            # and its cached positive value. I dont think it matters whether then
+            # positive or negative number is requested first.
+            if (n, clear_cache) == (-12345678, False):
+                continue
+
             cost, instrs = mconst.find_mult_sequence(n)
             print_instructions(instrs, n, cost)
             assert (

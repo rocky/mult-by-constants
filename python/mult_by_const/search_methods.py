@@ -25,6 +25,7 @@ from mult_by_const.instruction import (
     REVERSE_SUBTRACT_1,
     Instruction,
     instruction_sequence_cost,
+    instruction_sequence_value,
 )
 from mult_by_const.util import signum
 
@@ -181,8 +182,12 @@ def search_negate_subtract_one(
         # so there is no benefit in reversing a subtraction here.
         return upper, candidate_instrs
 
+    # FIXME: for some reason for -12345678 we get the wrong value 15
+    # (under default cost model) when we combine the < 0 test below as part of the "if"
+    # above. Investigate.
+    op_flag = OP_R1 if instruction_sequence_value(candidate_instrs) < 0 else REVERSE_SUBTRACT_1
     return self.try_plus_offset(
-        -n, -1, upper + self.eps, lower, instrs, candidate_instrs, REVERSE_SUBTRACT_1
+        -n, +1, upper + self.eps, lower, instrs, candidate_instrs, op_flag
     )
 
 
