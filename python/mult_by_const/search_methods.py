@@ -182,7 +182,7 @@ def search_negate_subtract_one(
         return upper, candidate_instrs
 
     return self.try_plus_offset(
-        -n, -1, upper, lower, instrs, candidate_instrs, REVERSE_SUBTRACT_1
+        -n, -1, upper + self.eps, lower, instrs, candidate_instrs, REVERSE_SUBTRACT_1
     )
 
 
@@ -213,8 +213,10 @@ def search_short_factors(
     i, j = 3, 8
     while j - 1 <= abs_n:
         if n < 0:
+            # We'll increase upper, to allow equal ties to succeed with subtraction since
+            # that's what we want when we have a negative number.
             try_cost, try_instrs = self.try_shift_op_factor(
-                -n, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
+                -n, j - 1, "subtract", i, upper + self.eps, lower, instrs, candidate_instrs
             )
             if try_cost < upper and try_instrs and try_instrs[-1].op == "subtract":
                 self.debug_msg(

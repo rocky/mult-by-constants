@@ -14,6 +14,7 @@ def test_factor():
             (342, 7),
             (343, 6),
             (12345678, 13),
+            # (-12345678, 13),
         ):
             cost, instrs = mconst.find_mult_sequence(n)
             print_instructions(instrs, n, cost)

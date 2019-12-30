@@ -25,7 +25,10 @@ class MultConstClass:
         # The below just saves us from having to index into cpu_model
         # everywhere
         self.cpu_model = cpu_model
+
+        # Useful shorthands
         self.op_costs = cpu_model.costs
+        self.eps = cpu_model.costs["eps"]
 
         # FIXME: get rid of as a parameter and put in cpu_model
         self.shift_cost = shift_cost_fn
