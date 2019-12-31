@@ -12,6 +12,7 @@ from mult_by_const.search_methods import (
     # search_binary_method_with_cache,
     search_cache,
     search_negate_subtract_one,
+    search_short_add_factors,
     search_short_factors,
     search_subtract_one,
 )
@@ -138,16 +139,27 @@ class MultConst(MultConstClass):
         if finished:
             return limit, cache_instrs
 
+        if n < 0 and not self.cpu_model.can_negate():
+            raise RuntimeError(f"""CPU model "{self.cpu_model.name}" can't handle negative numbers.""")
+
+        # FIXME: move elswhere, such as into search_methods.
         if search_methods is None:
             # Note timings show search_cache() *without* binary search is faster on one-shot
             # searches than search_binary_method_with_cache().
             if n > 0:
-                self.search_methods = (
-                    search_cache,
-                    search_short_factors,
-                    search_add_one,
-                    search_subtract_one,
-                )
+                if self.cpu_model.can_negate():
+                    self.search_methods = (
+                        search_cache,
+                        search_short_factors,
+                        search_add_one,
+                        search_subtract_one
+                    )
+                else:
+                    self.search_methods = (
+                        search_cache,
+                        search_short_add_factors,
+                        search_add_one,
+                    )
             else:
                 self.search_methods = (
                     search_cache,

@@ -19,6 +19,16 @@
 Synopsis
 ========
 
+Command-line utility:
+
+```console
+$ mult-by-const 51          # Get instruction sequence to multiply by 51
+$ mult-by-const -- -51      # Get instruction sequence to multiply by -51
+$ mult-by-const -m adds 51  # Use "chained-adds" CPU model to multiply by 51
+$ mult-by-const --to 100    # Get instruction sequences for positive numbers up to 100
+$ mult-by-const --help      # Get basic help on command options
+```
+
 Python API:
 
 ```python
@@ -40,13 +50,6 @@ with open(out_path, "w") as out:
 ```
 
 See also the [_spe86_](./spe86) directory for a C API.
-
-Command-line utility:
-
-```console
-$ mult-by-const 51  # Get instruction sequence to multiply by 51
-$ mult-by-const -to 100  # Get instruction sequences for positive numbers up to 100
-```
 
 See also the directories [_spe86_](./spe86) and [_vinc17/rigo_](./vinc17/rigo) for C programs.
 

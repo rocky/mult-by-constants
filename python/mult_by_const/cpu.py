@@ -1,7 +1,7 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """Various CPU profiles which includes instruction-cost models.
 """
-from typing import Dict, KeysView, FrozenSet, Any
+from typing import Dict, FrozenSet, Any
 from sys import maxsize as inf_cost
 
 # Do the instructions allow up to 3 operands or 2?
@@ -118,6 +118,10 @@ chained_adds = CPUProfile(
 )
 
 DEFAULT_CPU_PROFILE = POWER_3addr_3reg
+SHORT2MODEL: Dict[str, Any] = {
+    "RISC": POWER_3addr_3reg,
+    "adds": chained_adds,
+}
 
 if __name__ == "__main__":
     print(POWER_3addr_3reg.can_negate())

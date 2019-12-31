@@ -191,6 +191,30 @@ def search_negate_subtract_one(
     )
 
 
+def search_short_add_factors(
+    self,
+    n: int,
+    upper: float,
+    lower: float,
+    instrs: List[Instruction],
+    candidate_instrs: List[Instruction],
+) -> Tuple[float, List[Instruction]]:
+
+    i, j = 1, 2
+    while j - 1 <= n:
+        upper, candidate_instrs = self.try_shift_op_factor(
+            n, j + 1, "add", i, upper, lower, instrs, candidate_instrs
+        )
+
+        # Any other factors to try?
+
+        i += 1
+        j <<= 1
+        pass
+
+    return upper, candidate_instrs
+
+# FIXME: try with above
 def search_short_factors(
     self,
     n: int,
