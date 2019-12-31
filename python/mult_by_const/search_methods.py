@@ -249,7 +249,7 @@ def search_short_factors(
             )
             if try_cost < upper and try_instrs and try_instrs[-1].op == "subtract":
                 self.debug_msg(
-                    f"*update {n} using factor {factor}; cost {try_cost} < previous limit {upper}"
+                    f"*update {n} using factor {j - 1}; cost {try_cost} < previous limit {upper}"
                 )
                 self.mult_cache.update_field(
                         n, upper=try_cost, instrs=try_instrs
