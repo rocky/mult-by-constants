@@ -1,6 +1,7 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """Code around instructions and instruction sequences"""
-from typing import List
+from typing import List, Optional
+from mult_by_const.cpu import inf_cost
 from mult_by_const.util import bin2str, print_sep
 
 # Below r[1] is the register we started out with
@@ -239,39 +240,46 @@ def print_instructions(
     return
 
 
-def check_instruction_sequence_value(n: int, instrs: List[Instruction]) -> None:
+def check_instruction_sequence_value(n: int, instrs: Optional[List[Instruction]]) -> None:
     """
     Check that the multiplication performed by the list of instructions `instrs`, is
     equal to passed-in expected multiplier `n`.
     """
+    if instrs is None:
+        # Can't check so do nothing
+        return
     actual_value = instruction_sequence_value(instrs)
-    assert n == actual_value, f"{instrs} value for {n} is {actual_value}; expecting {n}"
+    assert n == actual_value, f"value for {n} is {actual_value}; expecting {n}"
     return
 
 
-def check_instruction_sequence_cost(cost: float, instrs: List[Instruction], n=None) -> None:
+def check_instruction_sequence_cost(cost: float, instrs: Optional[List[Instruction]], n=None) -> None:
     """Check that the instruction cost in `instrs`, is equal to passed-in expected cost `cost`.
     """
-    actual_cost = instruction_sequence_cost(instrs)
+    actual_cost = inf_cost if cost == inf_cost else instruction_sequence_cost(instrs)
     prefix = f"{instrs} cost"
     prefix += f" for {n}" if n is not None else ""
     assert cost == actual_cost, f"{prefix} is {actual_cost}; expecting {cost}"
     return
 
 
-def instruction_sequence_cost(instrs: List[Instruction]) -> float:
+def instruction_sequence_cost(instrs: Optional[List[Instruction]]) -> float:
     """Check that the instruction sequence cost of the list of instructions `instrs`, is
     equal to passed-in expected cost `cost`.
     """
+    if instrs is None:
+        return inf_cost
     cost: float = 0
     for inst in instrs:
         cost += inst.cost
         pass
     return cost
 
-def instruction_sequence_value(instrs: List[Instruction]) -> int:
+def instruction_sequence_value(instrs: Optional[List[Instruction]]) -> int:
     """Return the cost associated with instruction sequence `instrs`.
     """
+    if instrs is None:
+        return inf_cost
     n, m = 1, 1
     for instr in instrs:
         if instr.op == "shift":

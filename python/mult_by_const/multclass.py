@@ -25,10 +25,7 @@ class MultConstClass:
         # The below just saves us from having to index into cpu_model
         # everywhere
         self.cpu_model = cpu_model
-
-        # Useful shorthands
         self.op_costs = cpu_model.costs
-        self.eps = cpu_model.costs["eps"]
 
         # FIXME: get rid of as a parameter and put in cpu_model
         self.shift_cost = shift_cost_fn
@@ -50,6 +47,7 @@ class MultConstClass:
         # and "beta" with the different types of cutoffs.
         self.mult_cache = MultCache(cpu_model)
         self.debug = debug
+        self.eps = self.op_costs["eps"]
         self.search_methods = search_methods
 
         # We use indent show nesting in debug output

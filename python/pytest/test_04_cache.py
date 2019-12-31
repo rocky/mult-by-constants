@@ -10,7 +10,7 @@ def test_lower_level_caching():
     mcache = MultCache()
     mcache.check()
     # Note: dictionaries keys in Python 3.8+ are in given in insertion order.
-    assert list(mcache.keys()) == [0, 1, -1], "The default starts with 0 and 1, -1"
+    assert list(mcache.keys()) == [1, 0, -1], "The default starts with 0 and 1, -1"
     assert len(mcache) == 3, "Should have at least 0 and 1"
 
     mcache.insert(2, 1, 1, True, [Instruction("add", 1)])
