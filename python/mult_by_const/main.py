@@ -9,6 +9,7 @@ import click
 import os
 import sys
 from mult_by_const.binary_method import binary_sequence
+from mult_by_const.cpu import SHORT2MODEL
 from mult_by_const.mult import MultConst
 from mult_by_const.instruction import print_instructions
 from mult_by_const.io import dump, dump_csv, dump_json, dump_yaml
@@ -19,6 +20,14 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 
 @click.command()
 @click.option("--to", type=int, required=False, help="Generate table up to this value.")
+@click.option(
+    "--model",
+    "-m",
+    type=click.Choice(("RISC", "adds")),
+    multiple=False,
+    default="RISC",
+    help="Intruction model and costs.",
+)
 @click.option(
     "--showcache/--no-showcache",
     "-S",
@@ -49,11 +58,12 @@ program = os.path.splitext(os.path.basename(__file__))[0]
 @click.option("--output", "-o", type=click.File("w"), help="File path to dump cache.")
 @click.version_option(version=VERSION)
 @click.argument("numbers", nargs=-1, type=int)
-def main(to, showcache, debug, binary_method, fmt, compact, output, numbers):
+def main(to, model, showcache, debug, binary_method, fmt, compact, output, numbers):
     """Searches for short sequences of shift, add, subtract instruction to compute multiplication
     by a constant.
     """
-    mult = MultConst(debug=debug)
+    model = SHORT2MODEL[model]
+    mult = MultConst(cpu_model=model, debug=debug)
     if to:
         for number in range(2, to + 1):
             if binary_method:

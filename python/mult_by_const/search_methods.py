@@ -191,6 +191,30 @@ def search_negate_subtract_one(
     )
 
 
+def search_short_add_factors(
+    self,
+    n: int,
+    upper: float,
+    lower: float,
+    instrs: List[Instruction],
+    candidate_instrs: List[Instruction],
+) -> Tuple[float, List[Instruction]]:
+    """Handles factors only of the form 2**i + 1. We keep this
+    short and simple and without subtract handling, to make certain cost
+    models work, like "chained adds" more streamlined. More complex
+    models can use this in conjunction with other factor searching.
+    """
+    i, j = 1, 2
+    while j - 1 <= n:
+        upper, candidate_instrs = self.try_shift_op_factor(
+            n, j + 1, "add", i, upper, lower, instrs, candidate_instrs
+        )
+        i += 1
+        j <<= 1
+        pass
+
+    return upper, candidate_instrs
+
 def search_short_factors(
     self,
     n: int,
@@ -200,21 +224,14 @@ def search_short_factors(
     candidate_instrs: List[Instruction],
 ) -> Tuple[float, List[Instruction]]:
 
+    upper, candidate_instrs = search_short_add_factors(
+            self, n, upper, lower, instrs, candidate_instrs
+    )
+
     abs_n = abs(n)
-    # The first factors, 3 = 2+1, and 5 = 4+1, are done special
-    # and out of the "while" loop below, because we don't want to
-    # consider subtraction factors 2-1 = 1, or 4-1 = 3.
-    #
-    # The latter, 3, is covered by 2+1 of the "for" loop below
 
-    for factor, shift_amount in ((3, 1), (5, 2)):
-        if factor > abs_n:
-            break
-        upper, candidate_instrs = self.try_shift_op_factor(
-            n, factor, "add", shift_amount, upper, lower, instrs, candidate_instrs
-        )
-        pass
-
+    # Adds were handled above so here we just need subtracts And we
+    # can start a little bit further out.
     i, j = 3, 8
     while j - 1 <= abs_n:
         if n < 0:
@@ -225,7 +242,7 @@ def search_short_factors(
             )
             if try_cost < upper and try_instrs and try_instrs[-1].op == "subtract":
                 self.debug_msg(
-                    f"*update {n} using factor {factor}; cost {try_cost} < previous limit {upper}"
+                    f"*update {n} using factor {j - 1}; cost {try_cost} < previous limit {upper}"
                 )
                 self.mult_cache.update_field(
                         n, upper=try_cost, instrs=try_instrs
@@ -235,11 +252,13 @@ def search_short_factors(
                 candidate_instrs = try_instrs
                 upper = try_cost
 
+            # FIXME: we seem need this for -12345678, why?
+            upper, candidate_instrs = self.try_shift_op_factor(
+                n, j + 1, "add", i, upper, lower, instrs, candidate_instrs
+            )
+
         upper, candidate_instrs = self.try_shift_op_factor(
             n, j - 1, "subtract", i, upper, lower, instrs, candidate_instrs
-        )
-        upper, candidate_instrs = self.try_shift_op_factor(
-            n, j + 1, "add", i, upper, lower, instrs, candidate_instrs
         )
 
         # Any other factors to try?

@@ -25,13 +25,6 @@ def consecutive_ones(n: int) -> Tuple[int, int]:
     return (one_run_count, n)
 
 
-def default_shift_cost(num: int) -> int:
-    # The default is to use a simple model where shifting by any amount is
-    # done in a fixed amount of time which is the same as an add/subtract
-    # operation.
-    return 1
-
-
 def bin2str(n: int) -> str:
     """Like built-in bin(), but we remove the leading 0b"""
     return f"-{bin(-n)[2:]}" if n < 0 else bin(n)[2:]

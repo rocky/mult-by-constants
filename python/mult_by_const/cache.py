@@ -1,6 +1,6 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """A multiplication-sequence cache module"""
-from typing import List, Tuple, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from mult_by_const.cpu import inf_cost, DEFAULT_CPU_PROFILE
 
@@ -75,20 +75,14 @@ class MultCache:
         """
         # Dictionaries keys in Python 3.8+ are in given in insertion order,
         # so we should insert 0 before 1.
-        self.cache: Dict[int, Tuple[float, float, bool, List[Instruction]]] = {
-            0: (1, 1, True, [Instruction("zero", 0, self.cpu_profile.costs["zero"])]),
+        self.cache: Dict[int, Tuple[float, float, bool, Optional[List[Instruction]]]] = {
             1: (0, 0, True, [Instruction("nop", 0, self.cpu_profile.costs["nop"])]),
         }
 
-        if "negate" in self.cpu_profile.costs:
-            negate_cost = self.cpu_profile.costs["negate"]
-            self.cache[-1] = (
-                negate_cost,
-                negate_cost,
-                True,
-                [Instruction("negate", 0, negate_cost)],
-            )
-            pass
+        for num, name in ((0, "zero"), (-1, "negate")):
+            cost: float = self.cpu_profile.costs.get(name, inf_cost)
+            insts: Optional[List[Any]] = [Instruction(name, 0, cost)] if cost != inf_cost else None
+            self.cache[num] = (cost, cost, True, insts)
 
         # The following help with search statistics
         self.hits_exact = 0
@@ -128,7 +122,7 @@ class MultCache:
 
     def __getitem__(
         self, n: int, record=True
-    ) -> Tuple[float, float, bool, List[Instruction]]:
+    ) -> Tuple[float, float, bool, Optional[List[Instruction]]]:
         """Check if we have cached search results for "n", and return that.
         If not in cached, we will return (0, 0, {}). Note that a prior
         result has been fully only searched if if the lower bound is equal to the
@@ -148,7 +142,8 @@ class MultCache:
                 # case where there not *complete* information?
                 self.hits_partial += 1
         self.cache[n] = (cache_lower, cache_upper, finished, cache_instrs)
-        return cache_lower, cache_upper, finished, cache_instrs[:]
+        instrs = cache_instrs[:] if cache_instrs is not None else None
+        return cache_lower, cache_upper, finished, instrs
 
     def update_field(
         self,
@@ -236,7 +231,7 @@ if __name__ == "__main__":
     multcache = MultCache()
     multcache.check()
     # Note: dictionaries keys in Python 3.8+ are in given in insertion order.
-    assert list(multcache.keys()) == [0, 1, -1], "We should have at least -1, 0 and 1"
+    assert list(multcache.keys()) == [1, 0, -1], "We should have at least -1, 0 and 1"
     multcache.check()
     multcache.insert(0, 1, 1, True, [Instruction("zero", 0, 1)])
     multcache.check()

@@ -1,7 +1,7 @@
 # Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
 """Various CPU profiles which includes instruction-cost models.
 """
-from typing import Dict, KeysView, FrozenSet, Any
+from typing import Any, Callable, Dict, FrozenSet, Optional
 from sys import maxsize as inf_cost
 
 # Do the instructions allow up to 3 operands or 2?
@@ -73,6 +73,7 @@ class CPUProfile:
         instruction_type: str,
         max_registers: int,
         costs: Dict[str, float],
+        shift_cost_fn: Optional[Callable] = None,
     ):
         self.name = name
         self.instruction_type = instruction_type
@@ -81,6 +82,12 @@ class CPUProfile:
         for field in ("add", "eps", "zero", "copy", "nop"):
             assert field in costs, f'A cost model needs to include  operation "{field}"'
         self.eps = self.costs["eps"]
+        if shift_cost_fn is None:
+            self.shift_cost_fn = lambda amount: shift_cost_equal_time
+        else:
+            self.shift_cost_fn = shift_cost_fn
+            pass
+        return
 
     def subtract_can_negate(self) -> bool:
         return "subtract" in self.costs and self.max_registers > 2
@@ -91,6 +98,11 @@ class CPUProfile:
     def can_subtract(self) -> bool:
         return "subtract" in self.costs
 
+    def has_true_shift(self) -> bool:
+        """Has a real "shift". If False we have to simulate this via a doubling "add".
+        """
+        return "shift" in self.costs
+
     def can_zero(self) -> bool:
         return self.can_negate() or self.costs["zero"] != inf_cost
 
@@ -99,8 +111,25 @@ class CPUProfile:
             "name": self.name,
             "instruction_type": self.instruction_type,
             "max_registers": self.max_registers,
-            "instruction_costs": self.costs
+            "instruction_costs": self.costs,
         }
+
+
+def shift_cost_equal_time(shift_cost, amount: int) -> float:
+    """
+    In this shift-cost model, there is no cost penalty for shifting larger amounts.
+    """
+    return shift_cost
+
+
+def shift_cost_double_only(shift_cost, amount: int) -> float:
+    """
+    In this shift-cost model, we can only shift by 1; essentially this is a doubling,
+    which can be done via an "add" instruction. We'll pretend there is a single
+    "shift" instruction, but when we go to print out the instructions, we'll
+    unroll this into the multiple "double" instructions.
+    """
+    return amount
 
 
 POWER_3addr_3reg = CPUProfile(
@@ -108,6 +137,9 @@ POWER_3addr_3reg = CPUProfile(
     instruction_type="three-address",
     max_registers=3,
     costs=RISC_equal_time_cost_profile,
+    shift_cost_fn=lambda amount: shift_cost_equal_time(
+        RISC_equal_time_cost_profile["shift"], amount
+    ),
 )
 
 chained_adds = CPUProfile(
@@ -115,13 +147,21 @@ chained_adds = CPUProfile(
     instruction_type="two-address",
     max_registers=3,
     costs=add_only_cost_profile,
+    shift_cost_fn=lambda amount: shift_cost_double_only(
+        add_only_cost_profile["add"], amount
+    ),
 )
 
 DEFAULT_CPU_PROFILE = POWER_3addr_3reg
+SHORT2MODEL: Dict[str, Any] = {"RISC": POWER_3addr_3reg, "adds": chained_adds}
 
 if __name__ == "__main__":
     print(POWER_3addr_3reg.can_negate())
     print(POWER_3addr_3reg.subtract_can_negate())
+    print(POWER_3addr_3reg.shift_cost_fn(1))
+    print(POWER_3addr_3reg.shift_cost_fn(2))
     print(chained_adds.can_negate())
     print(chained_adds.subtract_can_negate())
     print(chained_adds.to_dict())
+    print(chained_adds.shift_cost_fn(1))
+    print(chained_adds.shift_cost_fn(2))
