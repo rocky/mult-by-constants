@@ -82,11 +82,12 @@ class CPUProfile:
         for field in ("add", "eps", "zero", "copy", "nop"):
             assert field in costs, f'A cost model needs to include  operation "{field}"'
         self.eps = self.costs["eps"]
-        self.shift_cost_fn = (
-            lambda amount: shift_cost_equal_time
-            if shift_cost_fn is None
-            else shift_cost_fn
-        )
+        if shift_cost_fn is None:
+            self.shift_cost_fn = lambda amount: shift_cost_equal_time
+        else:
+            self.shift_cost_fn = shift_cost_fn
+            pass
+        return
 
     def subtract_can_negate(self) -> bool:
         return "subtract" in self.costs and self.max_registers > 2
@@ -150,6 +151,10 @@ SHORT2MODEL: Dict[str, Any] = {"RISC": POWER_3addr_3reg, "adds": chained_adds}
 if __name__ == "__main__":
     print(POWER_3addr_3reg.can_negate())
     print(POWER_3addr_3reg.subtract_can_negate())
+    print(POWER_3addr_3reg.shift_cost_fn(1))
+    print(POWER_3addr_3reg.shift_cost_fn(2))
     print(chained_adds.can_negate())
     print(chained_adds.subtract_can_negate())
     print(chained_adds.to_dict())
+    print(chained_adds.shift_cost_fn(1))
+    print(chained_adds.shift_cost_fn(2))

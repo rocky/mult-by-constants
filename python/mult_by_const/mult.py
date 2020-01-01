@@ -19,18 +19,14 @@ from mult_by_const.search_methods import (
 
 from mult_by_const.instruction import FACTOR_FLAG, Instruction, instruction_sequence_cost
 
-from mult_by_const.util import default_shift_cost
-
-
 class MultConst(MultConstClass):
     def __init__(
         self,
         cpu_model=DEFAULT_CPU_PROFILE,
         debug=False,
-        shift_cost_fn=default_shift_cost,
         search_methods=None,
     ):
-        super().__init__(cpu_model, debug, shift_cost_fn, search_methods)
+        super().__init__(cpu_model, debug, search_methods)
 
     # FIXME: move info search_methods
     def try_shift_op_factor(

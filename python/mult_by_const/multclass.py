@@ -3,13 +3,10 @@
 
 from typing import List, Tuple
 
-from mult_by_const.cpu import DEFAULT_CPU_PROFILE
-
-from mult_by_const.instruction import Instruction
-
-from mult_by_const.util import consecutive_zeros, default_shift_cost
-
 from mult_by_const.cache import MultCache
+from mult_by_const.cpu import DEFAULT_CPU_PROFILE
+from mult_by_const.instruction import Instruction
+from mult_by_const.util import consecutive_zeros
 
 
 class MultConstClass:
@@ -17,7 +14,6 @@ class MultConstClass:
         self,
         cpu_model=DEFAULT_CPU_PROFILE,
         debug=False,
-        shift_cost_fn=default_shift_cost,
         search_methods=None,
     ):
 
@@ -26,9 +22,7 @@ class MultConstClass:
         # everywhere
         self.cpu_model = cpu_model
         self.op_costs = cpu_model.costs
-
-        # FIXME: get rid of as a parameter and put in cpu_model
-        self.shift_cost = shift_cost_fn
+        self.shift_cost = cpu_model.shift_cost_fn
 
         # Cache prior searches
         # The key is the positive number looked up.
