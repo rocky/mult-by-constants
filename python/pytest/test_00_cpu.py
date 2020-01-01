@@ -8,7 +8,7 @@ import os
 def test_cpu_profiles():
     for cpu_profile, can_negate, subtract_can_negate, shift1_cost, shift2_cost, in (
         (cpu.POWER_3addr_3reg, True, True, 1, 1),
-        (cpu.chained_adds, False, False, 1, cpu.inf_cost),
+        (cpu.chained_adds, False, False, 1, 2),
     ):
         assert cpu_profile.can_negate() == can_negate
         assert cpu_profile.subtract_can_negate() == subtract_can_negate

@@ -98,6 +98,11 @@ class CPUProfile:
     def can_subtract(self) -> bool:
         return "subtract" in self.costs
 
+    def has_true_shift(self) -> bool:
+        """Has a real "shift". If False we have to simulate this via a doubling "add".
+        """
+        return "shift" in self.costs
+
     def can_zero(self) -> bool:
         return self.can_negate() or self.costs["zero"] != inf_cost
 
@@ -119,10 +124,12 @@ def shift_cost_equal_time(shift_cost, amount: int) -> float:
 
 def shift_cost_double_only(shift_cost, amount: int) -> float:
     """
-    In this sift-cost model, we can only shift by 1; essentially this is a doubling,
-    which can be done via an "add" instruction.
+    In this shift-cost model, we can only shift by 1; essentially this is a doubling,
+    which can be done via an "add" instruction. We'll pretend there is a single
+    "shift" instruction, but when we go to print out the instructions, we'll
+    unroll this into the multiple "double" instructions.
     """
-    return shift_cost if amount == 1 else inf_cost
+    return amount
 
 
 POWER_3addr_3reg = CPUProfile(
