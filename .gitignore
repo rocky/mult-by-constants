@@ -1,5 +1,6 @@
 *~
 /.cache
+/.coverage
 /.mypy_cache
 /.python-version
 /mult_by_const.egg-info
