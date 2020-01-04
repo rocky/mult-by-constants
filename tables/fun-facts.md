@@ -1,4 +1,4 @@
-Here we have some observations about the sequences
+Here we have some observations about the sequences.
 
 RISC model (equal-cost adds, subtracts, shifts)
 -----------------------------------------------
