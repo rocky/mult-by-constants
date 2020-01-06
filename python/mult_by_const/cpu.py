@@ -32,6 +32,27 @@ RISC_equal_time_cost_profile: Dict[str, float] = {
     # "shift_add" = 1  # old RISC machines have this
 }
 
+# ARM has both shift-and-add and shift-and-subtract in one
+# instruction. See for example
+# http://www.csbio.unc.edu/mcmillan/Comp411F18/Lecture07.pdf Note that
+# ARM also has a instruction 32x32 multiply, that works in a single
+# cycle so that might be used instead of these sequences. However
+# sequences might still be useful for multi-word multiplications,
+# or polynomial multiplications
+ARM_equal_time_cost_profile: Dict[str, float] = {
+    "add": 1,
+    "copy": 1,
+    "eps": 0.1,
+    "negate": 1,
+    "nop": 0,
+    "shift": 1,
+    "shift-add": 1,
+    "shift-subtract": 1,
+    "subtract": 1,
+    "zero": 1,
+    # "shift_add" = 1  # old RISC machines have this
+}
+
 # "add" and "copy" only
 add_only_cost_profile: Dict[str, float] = {
     "add": 1,
@@ -98,6 +119,16 @@ class CPUProfile:
     def can_subtract(self) -> bool:
         return "subtract" in self.costs
 
+    def has_shift_add(self) -> bool:
+        """Has a real "shift" and "add" in one instruction.
+        """
+        return "shift-add" in self.costs
+
+    def has_shift_subtract(self) -> bool:
+        """Has a real "shift" and "subtract" in one instruction.
+        """
+        return "shift-add" in self.costs
+
     def has_true_shift(self) -> bool:
         """Has a real "shift". If False we have to simulate this via a doubling "add".
         """
@@ -139,6 +170,16 @@ POWER_3addr_3reg = CPUProfile(
     costs=RISC_equal_time_cost_profile,
     shift_cost_fn=lambda amount: shift_cost_equal_time(
         RISC_equal_time_cost_profile["shift"], amount
+    ),
+)
+
+ARM_3addr_3reg = CPUProfile(
+    name="ARM 3-address, 3-register",
+    instruction_type="three-address",
+    max_registers=3,
+    costs=ARM_equal_time_cost_profile,
+    shift_cost_fn=lambda amount: shift_cost_equal_time(
+        ARM_equal_time_cost_profile["shift"], amount
     ),
 )
 

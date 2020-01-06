@@ -1,4 +1,4 @@
-# Copyright (c) 2019 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2019-2020 by Rocky Bernstein <rb@dustyfeet.com>
 """Code around instructions and instruction sequences"""
 from typing import List, Optional
 from mult_by_const.cpu import inf_cost
@@ -17,6 +17,8 @@ OP2SHORT = {
     "negate": "-n",
     "nop": "nop",
     "shift": "<<",
+    "shift-add": "<<+",
+    "shift-subtract": "<<-",
     "subtract": "-",
 }
 SHORT2OP = {v: k for k, v in OP2SHORT.items()}
@@ -26,7 +28,7 @@ class Instruction:
     """Object containing information about a particular operation or instruction as it pertains
     to the instruction sequence"""
 
-    def __init__(self, op: str, amount: int, cost: float = 1):
+    def __init__(self, op: str, amount: int, cost: float = 1, operand2 = None, flag=None):
         self.op = op  # The name of the operation; e.g. "shift", "add", "subtract"
 
         # "cost" is redundant and can be computed from the "op" and "amount";
@@ -41,7 +43,12 @@ class Instruction:
         #    REVERSE_SUBTRACT_1 if we reverse the operands and subtract,
         #    REVERSE_SUBTRACT_FACTOR if we reverse the operands and add the last factor,
         #
+        self.flag = flag if flag else amount
         self.amount = amount
+
+        # Shift and add and multi-register sequences require the operand
+        # that the use
+        self.operand2 = operand2
 
     def __repr__(self):
         """Format instruction in compact form. No cost is shown"""
@@ -81,6 +88,11 @@ class Instruction:
                 operand1 = "n"
                 operand2 = f"???{self.amount}"
             return f"{operand1}{op_str}{operand2}"
+        elif op_str in ("<<+", "<<-"):
+            op_str = f"<<{self.amount}{op_str[-1]}"
+            op_str += "1" if self.flag == OP_R1 else "m"
+            return op_str
+
         else:
             return f"{op_str} {self.amount}"
 
@@ -113,12 +125,18 @@ class Instruction:
             instr_str += f"{target}"
         elif self.op == "shift":
             instr_str += f"{op1} << {self.amount}"
+        elif self.op == "shift-add":
+            instr_str += f"{op2}<<{self.amount} + "
+            instr_str += "m" if self.flag == FACTOR_FLAG else "r1"
+        elif self.op == "shift-subtract":
+            instr_str += f"{op2}<<{self.amount} - "
+            instr_str += "m" if self.flag == FACTOR_FLAG else "r1"
         elif self.op == "zero":
             instr_str += "0"
         else:
             instr_str = f"{op1} {self.op} {op2}"
         instr_str += ";"
-        return f"{instr_str:24}cost: {self.cost:2}"
+        return f"{instr_str:25}cost: {self.cost:2}"
 
     def __str__(self):
         """format instruction showing cost"""
@@ -149,10 +167,16 @@ class Instruction:
             pass
         elif self.op == "shift":
             op_str += f" n, {self.amount}"
+        elif self.op == "shift-add":
+            op_str += f" n, {self.amount}, +"
+            op_str += "m" if self.flag == FACTOR_FLAG else "1"
+        elif self.op == "shift-subtract":
+            op_str += f" n, {self.amount}, -"
+            op_str += "m" if self.flag == FACTOR_FLAG else "1"
         else:
             op_str = f"{self.op} {self.amount} ???"
         op_str += ";"
-        return f"op: {op_str:24}cost: {self.cost:2}"
+        return f"op: {op_str:25}cost: {self.cost:2}"
 
     def __eq__(self, other: object):
         for field in ("op", "cost", "amount"):
@@ -182,7 +206,7 @@ def print_instructions(
         value = 1
 
     if instrs:
-        print(f"{value:9}: r[1] = <initial value>; cost:  0")
+        print(f"{value:9}: r[1] = <initial value>;  cost:  0")
 
     previous_value = 1
     last_target = "r[1]"
@@ -214,6 +238,27 @@ def print_instructions(
                 value = previous_value - value
             else:
                 print(f"unknown subtract flag: {instr.amount}")
+        elif instr.op == "shift-add":
+            previous_value = value
+            value <<= instr.amount
+            if i + 1 < len(instrs) and instrs[i + 1].flag != OP_R1:
+                target = "r[n]"
+                pass
+            if instr.amount == OP_R1:
+                value += 1
+            elif instr.amount == FACTOR_FLAG:
+                value += previous_value
+        elif instr.op == "shift-subtract":
+            previous_value = value
+            value <<= instr.amount
+            if i + 1 < len(instrs) and instrs[i + 1].flag != OP_R1:
+                target = "r[n]"
+                pass
+            if instr.amount == OP_R1:
+                value -= 1
+            elif instr.amount == FACTOR_FLAG:
+                value -= previous_value
+
         elif instr.op == "zero":
             value = 0
         elif instr.op == "negate":
@@ -313,6 +358,13 @@ def instruction_sequence_value(instrs: Optional[List[Instruction]]) -> int:
             n = -n
         elif instr.op == "nop":
             pass
+        elif instr.op == ("shift-add", "shift-subtract"):
+            m = n
+            n <<= instr.amount
+            if instr.op == "shift-add":
+                n += m if instr.flag == FACTOR_FLAG else 1
+            else:
+                n -= m if instr.flag == FACTOR_FLAG else 1
         else:
             print(f"unknown op {instr.op}")
         pass
@@ -351,8 +403,16 @@ def str2instruction(s: str) -> Instruction:
     elif s[1] == "<":
         if s[1:3] != "<<":
             raise RuntimeError(f"Expecting shift operator got {s}")
-        amount = int(s[3:], 10)
-        op = SHORT2OP["<<"]
+        if s[-2] in ("+", "-"):
+            op = SHORT2OP["<<" + s[-2]]
+            shift_amount = s[3:-2]
+            flag_str = s[-1]
+            amount = int(shift_amount, 10)
+            flag = FACTOR_FLAG if flag_str == "m" else OP_R1
+            return Instruction(op, amount, flag=flag)
+        else:
+            amount = int(s[3:], 10)
+            op = SHORT2OP["<<"]
     else:
         raise RuntimeError(f"Unconvertable string {s}")
     return Instruction(op, amount)
@@ -365,27 +425,39 @@ def str2instructions(s: str) -> List[Instruction]:
 
 
 if __name__ == "__main__":
-    instrs = [
-        Instruction("shift", 4),
-        Instruction("add", 1),
-        Instruction("shift", 2),
-        Instruction("subtract", FACTOR_FLAG),
-        Instruction("negate", 0),
-    ]
-    print(find_negatable(instrs))
-    print(instrs)
-    instrs2 = str2instructions("[n<<4, n+1, n<<2, n-m, -n]")
-    print(instrs2)
-    assert instrs == instrs2
-    for inst in instrs:
-        print(str(inst))
-    print_instructions(instrs)
-    print(
-        f"Instruction value: {instruction_sequence_value(instrs)}, cost: {instruction_sequence_cost(instrs)}"
-    )
+    # instrs = [
+    #     Instruction("shift", 4),
+    #     Instruction("add", 1),
+    #     Instruction("shift", 2),
+    #     Instruction("subtract", FACTOR_FLAG),
+    #     Instruction("negate", 0),
+    # ]
+    # print(find_negatable(instrs))
+    # print(instrs)
+    # instrs2 = str2instructions("[n<<4, n+1, n<<2, n-m, -n]")
+    # print(instrs2)
+    # assert instrs == instrs2
+    # for inst in instrs:
+    #     print(str(inst))
+    # print_instructions(instrs)
+    # print(
+    #     f"Instruction value: {instruction_sequence_value(instrs)}, cost: {instruction_sequence_cost(instrs)}"
+    # )
 
-    for inst in instrs:
-        roundtrip_inst = str2instruction(repr(inst))
-        print(f"repr() vs roundtrip(): '{repr(inst)}' == '{repr(roundtrip_inst)}'")
-        assert repr(inst) == repr(roundtrip_inst)
-        pass
+    # for inst in instrs:
+    #     roundtrip_inst = str2instruction(repr(inst))
+    #     print(f"repr() vs roundtrip(): '{repr(inst)}' == '{repr(roundtrip_inst)}'")
+    #     assert repr(inst) == repr(roundtrip_inst)
+    #     pass
+
+    instrs3 = [
+        Instruction("shift-add", amount=4, flag=OP_R1),
+        Instruction("shift-subtract", amount=2, flag=FACTOR_FLAG),
+    ]
+    print(instrs3)
+    instrs4 = str2instructions("[n<<4+1, n<<2-m]")
+    print(instrs4)
+    assert instrs3 == instrs4
+    for inst in instrs4:
+        print(str(inst))
+    print_instructions(instrs4)
