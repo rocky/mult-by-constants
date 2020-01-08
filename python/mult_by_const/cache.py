@@ -196,21 +196,21 @@ class MultCache:
                 m = n
                 n <<= instr.amount
             elif instr.op == "add":
-                if instr.amount == OP_R1:
+                if instr.flag == OP_R1:
                     n += 1
-                elif instr.amount == FACTOR_FLAG:
+                elif instr.flag == FACTOR_FLAG:
                     n += m
                 else:
                     print(f"Invalid flag on add in {instr}")
                     pass
             elif instr.op == "subtract":
-                if instr.amount == OP_R1:
+                if instr.flag == OP_R1:
                     n -= 1
-                elif instr.amount == REVERSE_SUBTRACT_1:
+                elif instr.flag == REVERSE_SUBTRACT_1:
                     n = 1 - n
-                elif instr.amount == FACTOR_FLAG:
+                elif instr.flag == FACTOR_FLAG:
                     n -= m
-                elif instr.amount == REVERSE_SUBTRACT_FACTOR:
+                elif instr.flag == REVERSE_SUBTRACT_FACTOR:
                     n = m - n
                 else:
                     raise RuntimeError(f"Invalid flag on subtract in {instr}")
@@ -242,7 +242,7 @@ if __name__ == "__main__":
         Instruction("shift", 4),
         Instruction("add", 1),
         Instruction("shift", 2),
-        Instruction("subtract", FACTOR_FLAG),
+        Instruction("subtract", flag=FACTOR_FLAG),
         Instruction("negate", 0),
     ]
     multcache.update_sequence_partials(instrs)

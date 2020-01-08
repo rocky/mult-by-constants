@@ -28,7 +28,7 @@ class Instruction:
     """Object containing information about a particular operation or instruction as it pertains
     to the instruction sequence"""
 
-    def __init__(self, op: str, amount: int, cost: float = 1, operand2 = None, flag=None):
+    def __init__(self, op: str, amount: int=0, cost: float = 1, operand2 = None, flag=None):
         self.op = op  # The name of the operation; e.g. "shift", "add", "subtract"
 
         # "cost" is redundant and can be computed from the "op" and "amount";
